@@ -1,0 +1,7 @@
+{
+  "name": "EcoStruxure PowerTag Link Gateway",
+  "render_readme": true,
+  "domains": ["sensor"],
+  "iot_class": ["Local Polling"],
+  "content_in_root": false
+}

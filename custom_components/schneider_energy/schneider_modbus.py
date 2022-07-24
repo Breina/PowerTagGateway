@@ -13,6 +13,7 @@ from pymodbus.payload import BinaryPayloadDecoder, BinaryPayloadBuilder
 # )
 
 POWERTAG_LINK_SLAVE_ID = 255
+SYNTHESIS_TABLE_SLAVE_ID = 247
 
 decoder = lambda registers: BinaryPayloadDecoder.fromRegisters(
     registers, byteorder=Endian.Big, wordorder=Endian.Big
@@ -419,6 +420,44 @@ class SchneiderModbus:
         """LQI–Minimal value between device and gateway"""
         return self.__read_int_16(0x79B8, power_tag_index)
 
+    # Identification and Status Register
+
+    def product_id(self):
+        """Product ID of the synthesis table"""
+        return self.__read_int_16(0x0001, SYNTHESIS_TABLE_SLAVE_ID)
+
+    def manufacturer(self):
+        """Product ID of the synthesis table"""
+        return self.__read_string(0x0002, 16, SYNTHESIS_TABLE_SLAVE_ID, 32)
+
+    def product_code(self):
+        """Commercial reference of the gateway"""
+        return self.__read_string(0x0012, 16, SYNTHESIS_TABLE_SLAVE_ID, 32)
+
+    def product_range(self):
+        """Product range of the gateway"""
+        return self.__read_string(0x0022, 8, SYNTHESIS_TABLE_SLAVE_ID, 16)
+
+    def product_model(self):
+        """Product model"""
+        return self.__read_string(0x002A, 8, SYNTHESIS_TABLE_SLAVE_ID, 16)
+
+    def name(self):
+        """Asset name"""
+        return self.__read_string(0x0032, 10, SYNTHESIS_TABLE_SLAVE_ID, 20)
+
+    def product_vendor_url(self):
+        """Vendor URL"""
+        return self.__read_string(0x003C, 17, SYNTHESIS_TABLE_SLAVE_ID, 34)
+
+
+
+
+
+    # Wireless Configured Devices – 100 Devices
+
+    def modbus_address_of_node(self, node_index: int):
+        return self.__read_int_16(0x012C + node_index - 1, SYNTHESIS_TABLE_SLAVE_ID)
 
 
     def __write(self, address: int, registers, unit: int):
@@ -537,6 +576,3 @@ class SchneiderModbus:
 client = SchneiderModbus("192.168.1.39", 502, 5)
 # print(client.power_active_power_demand_total_maximum(1))
 # print(client.power_active_demand_total_maximum_timestamp(1))
-
-print(client.tag_radio_rssi_minimum(1))
-print(client.tag_radio_lqi_minimum(1))

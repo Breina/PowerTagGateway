@@ -8,7 +8,8 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
 )
 
-DOMAIN = 'idrac_power_monitor'
+GATEWAY_DOMAIN = 'PowerTagGateway'
+TAG_DOMAIN = 'PowerTag'
 
 DATA_IDRAC_REST_CLIENT = 'client'
 

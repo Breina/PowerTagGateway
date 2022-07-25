@@ -1,16 +1,10 @@
 import enum
-# from homeassistant.exceptions import HomeAssistantError
 import math
 from datetime import datetime
 
 from pymodbus.client.sync import ModbusTcpClient as ModbusClient
 from pymodbus.constants import Endian
 from pymodbus.payload import BinaryPayloadDecoder, BinaryPayloadBuilder
-
-# from .const import (
-#     JSON_NAME, JSON_MANUFACTURER, JSON_MODEL, JSON_SERIAL_NUMBER,
-#     JSON_POWER_CONSUMED_WATTS, JSON_FIRMWARE_VERSION
-# )
 
 POWERTAG_LINK_SLAVE_ID = 255
 SYNTHESIS_TABLE_SLAVE_ID = 247
@@ -20,32 +14,19 @@ decoder = lambda registers: BinaryPayloadDecoder.fromRegisters(
 )
 
 
-# def handle_error(result):
-#     if result.status_code == 401:
-#         raise InvalidAuth()
-#
-#     if result.status_code == 404:
-#         error = result.json()['error']
-#         if error['code'] == 'Base.1.0.GeneralError' and 'RedFish attribute is disabled' in \
-#                 error['@Message.ExtendedInfo'][0]['Message']:
-#             raise RedfishConfig()
-#
-#     if result.status_code != 200:
-#         raise CannotConnect(result.text)
-
 class Phase(enum.Enum):
-    a = 0
-    b = 2
-    c = 4
+    A = 0
+    B = 2
+    C = 4
 
 
 class LineVoltage(enum.Enum):
-    a_b = 0
-    b_c = 2
-    c_a = 4
-    a_n = 8
-    b_n = 10
-    c_n = 12
+    A_B = 0
+    B_C = 2
+    C_A = 4
+    A_N = 8
+    B_N = 10
+    C_N = 12
 
 
 class LinkStatus(enum.Enum):
@@ -70,7 +51,9 @@ class AlarmStatus:
         self.alarm_load_current_loss = (lower_mask & 0b0001_0000) != 0
         self.alarm_overvoltage = (lower_mask & 0b0010_0000) != 0
         self.alarm_undervoltage = (lower_mask & 0b0100_0000) != 0
-        self.alarm_battery_low = (lower_mask & 0b1000_0000) != 0
+        self.alarm_heattag_alarm = (lower_mask & 0b0001_0000_0000) != 0
+        self.alarm_heattag_maintenance = (lower_mask & 0b0100_0000_0000) != 0
+        self.alarm_heattag_replacement = (lower_mask & 0b1000_0000_0000) != 0
 
 
 class DeviceUsage(enum.Enum):
@@ -98,15 +81,15 @@ class DeviceUsage(enum.Enum):
 
 
 class PhaseSequence(enum.Enum):
-    a = 1
-    b = 2
-    c = 3
-    abc = 4
-    acb = 5
-    bca = 6
-    bac = 7
-    cab = 8
-    cba = 9
+    A = 1
+    B = 2
+    C = 3
+    ABC = 4
+    ACB = 5
+    BCA = 6
+    BAC = 7
+    CAB = 8
+    CBA = 9
 
 
 class Position(enum.Enum):
@@ -296,7 +279,7 @@ class SchneiderModbus:
 
     def tag_phase_sequence(self, power_tag_index: int) -> PhaseSequence:
         """Phase sequence."""
-        return PhaseSequence(self.__read_int_16(0x7927, power_tag_index))
+        return PhaseSequence(self.__read_int_16(0x7926, power_tag_index))
 
     def tag_position(self, power_tag_index: int) -> Position:
         """Mounting position"""
@@ -384,7 +367,7 @@ class SchneiderModbus:
         """Communication status between PowerTag Link gateway and wireless devices."""
         return self.__read_int_16(0x79A9, power_tag_index) != 0
 
-    def tag_wireless_packet_error_rate(self, power_tag_index: int) -> float | None:
+    def tag_radio_per_tag(self, power_tag_index: int) -> float | None:
         """Packet Error Rate (PER) of the device, received by PowerTag Link gateway"""
         return self.__read_float_32(0x79B4, power_tag_index)
 
@@ -392,11 +375,11 @@ class SchneiderModbus:
         """RSSI of the device, received by PowerTag Link gateway"""
         return self.__read_float_32(0x79B6, power_tag_index)
 
-    def tag_radio_link_quality(self, power_tag_index: int) -> int | None:
+    def tag_radio_lqi_tag(self, power_tag_index: int) -> int | None:
         """Link Quality Indicator (LQI) of the device, received by PowerTag Link gateway"""
         return self.__read_int_16(0x79B8, power_tag_index)
 
-    def tag_radio_per(self, power_tag_index: int) -> float | None:
+    def tag_radio_per_gateway(self, power_tag_index: int) -> float | None:
         """PER of gateway, calculated inside the PowerTag Link gateway"""
         return self.__read_float_32(0x79AF, power_tag_index)
 
@@ -404,7 +387,7 @@ class SchneiderModbus:
         """Radio Signal Strength Indicator (RSSI) of gateway, calculated inside the PowerTag Link gateway"""
         return self.__read_float_32(0x79B1, power_tag_index)
 
-    def tag_radio_lqi(self, power_tag_index: int) -> float | None:
+    def tag_radio_lqi_gateway(self, power_tag_index: int) -> float | None:
         """LQI of gateway, calculated insider the PowerTag Link gateway"""
         return self.__read_int_16(0x79B3, power_tag_index)
 
@@ -450,15 +433,12 @@ class SchneiderModbus:
         """Vendor URL"""
         return self.__read_string(0x003C, 17, SYNTHESIS_TABLE_SLAVE_ID, 34)
 
-
-
-
-
     # Wireless Configured Devices – 100 Devices
 
     def modbus_address_of_node(self, node_index: int):
         return self.__read_int_16(0x012C + node_index - 1, SYNTHESIS_TABLE_SLAVE_ID)
 
+    # Helper functions
 
     def __write(self, address: int, registers, unit: int):
         response = self.client.write_registers(address, registers, unit=unit)
@@ -495,7 +475,7 @@ class SchneiderModbus:
     def __write_int_16(self, address: int, unit: int, value: int):
         assert (1 <= unit <= 247) or (unit == 255)
         builder = BinaryPayloadBuilder(byteorder=Endian.Big, wordorder=Endian.Big)
-        builder.add_16bit_uint(1)
+        builder.add_16bit_uint(value)
         self.__write(address, builder.to_registers(), unit)
 
     def __read_int_32(self, address: int, unit: int) -> int | None:
@@ -530,49 +510,3 @@ class SchneiderModbus:
             return None
 
         return datetime(year, month, day, hour, minute, second, millisecond)
-
-    # def get_power_usage(self):
-    #     result = self.get_path(drac_powercontrol_path)
-    #     handle_error(result)
-    #
-    #     power_results = result.json()
-    #     return power_results[JSON_POWER_CONSUMED_WATTS]
-    #
-    # def get_device_info(self):
-    #     result = self.get_path(drac_chassis_path)
-    #     handle_error(result)
-    #
-    #     chassis_results = result.json()
-    #     return {
-    #         JSON_NAME: chassis_results[JSON_NAME],
-    #         JSON_MANUFACTURER: chassis_results[JSON_MANUFACTURER],
-    #         JSON_MODEL: chassis_results[JSON_MODEL],
-    #         JSON_SERIAL_NUMBER: chassis_results[JSON_SERIAL_NUMBER]
-    #     }
-    #
-    # def get_firmware_version(self):
-    #     result = self.get_path(drac_managers_path)
-    #     handle_error(result)
-    #
-    #     manager_results = result.json()
-    #     return manager_results[JSON_FIRMWARE_VERSION]
-    #
-    # def get_path(self, path):
-    #     return requests.get(protocol + self.host + path, auth=self.auth, verify=False)
-
-
-# class CannotConnect(HomeAssistantError):
-#     """Error to indicate we cannot connect."""
-#
-#
-# class InvalidAuth(HomeAssistantError):
-#     """Error to indicate there is invalid auth."""
-#
-#
-# class RedfishConfig(HomeAssistantError):
-#     """Error to indicate that Redfish was not properly configured"""
-
-
-client = SchneiderModbus("192.168.1.39", 502, 5)
-# print(client.power_active_power_demand_total_maximum(1))
-# print(client.power_active_demand_total_maximum_timestamp(1))

@@ -33,7 +33,7 @@ def tag_device_info(client: SchneiderModbus, modbus_index: int, presentation_url
     )
 
 
-def phase_sequence_to_phase(phase_sequence: PhaseSequence) -> [Phase]:
+def phase_sequence_to_phases(phase_sequence: PhaseSequence) -> [Phase]:
     return {
         PhaseSequence.A: [Phase.A],
         PhaseSequence.B: [Phase.B],
@@ -45,6 +45,22 @@ def phase_sequence_to_phase(phase_sequence: PhaseSequence) -> [Phase]:
         PhaseSequence.CAB: [Phase.C, Phase.A, Phase.B],
         PhaseSequence.CBA: [Phase.C, Phase.B, Phase.A]
     }[phase_sequence]
+
+
+def phase_sequence_to_line_voltages(phase_sequence: PhaseSequence) -> [LineVoltage]:
+    return {
+        PhaseSequence.A: [LineVoltage.A_N],
+        PhaseSequence.B: [LineVoltage.B_N],
+        PhaseSequence.C: [LineVoltage.C_N],
+        PhaseSequence.ABC: [LineVoltage.A_N, LineVoltage.B_N, LineVoltage.C_N],
+        PhaseSequence.ACB: [LineVoltage.A_N, LineVoltage.B_N, LineVoltage.C_N],
+        PhaseSequence.BAC: [LineVoltage.A_N, LineVoltage.B_N, LineVoltage.C_N],
+        PhaseSequence.BCA: [LineVoltage.A_N, LineVoltage.B_N, LineVoltage.C_N],
+        PhaseSequence.CAB: [LineVoltage.A_N, LineVoltage.B_N, LineVoltage.C_N],
+        PhaseSequence.CBA: [LineVoltage.A_N, LineVoltage.B_N, LineVoltage.C_N] # TODO check
+    }[phase_sequence]
+
+
 
 
 class GatewayEntity(Entity):
@@ -59,15 +75,15 @@ class GatewayEntity(Entity):
 
 
 class PowerTagEntity(Entity):
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, sensor_name: str):
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, entity_name: str):
         self._client = client
         self._modbus_index = modbus_index
 
         self._attr_device_info = tag_device
-        self._attr_name = f"{tag_device['name']} {sensor_name}"
+        self._attr_name = f"{tag_device['name']} {entity_name}"
 
         serial = client.tag_serial_number(modbus_index)
-        self._attr_unique_id = f"{TAG_DOMAIN}{serial}{sensor_name}"
+        self._attr_unique_id = f"{TAG_DOMAIN}{serial}{entity_name}"
 
 
 class PowerTagApparentPower(PowerTagEntity, SensorEntity):
@@ -307,6 +323,9 @@ class PowerTagRadioCommunicationValid(PowerTagEntity, BinarySensorEntity):
 
 
 class PowerTagResetPeakDemand(PowerTagEntity, ButtonEntity):
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
+        super().__init__(client, modbus_index, tag_device, "reset peak demand")
+
     def press(self) -> None:
         self.reset()
 
@@ -380,8 +399,8 @@ class GatewayStatus(GatewayEntity, BinarySensorEntity):
 class GatewayTime(GatewayEntity, SensorEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
-        super().__init__(client, modbus_index, tag_device, "datetime")
+    def __init__(self, client: SchneiderModbus, tag_device: DeviceInfo):
+        super().__init__(client, tag_device, "datetime")
 
     async def async_update(self):
         self._attr_native_value = self._client.date_time()

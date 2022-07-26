@@ -1,5 +1,4 @@
 {
-  "title": "PowerTag Link Gateway",
   "config": {
     "step": {
       "user": {
@@ -10,14 +9,12 @@
         }
       },
       "device": {
-        "title": "Device selection",
         "description": "Select your PowerTag Link Gateway device",
         "data": {
           "device": "Device"
         }
       },
       "configure": {
-        "title": "Configure device",
         "description": "Configure your device",
         "data": {
           "host": "[%key:common::config_flow::data::host%]",

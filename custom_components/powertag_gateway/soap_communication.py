@@ -1,6 +1,7 @@
 import uuid
 
 import requests
+from homeassistant.core import HomeAssistant
 from requests import Response
 from wsdiscovery.service import Service
 
@@ -21,7 +22,7 @@ template = """<?xml version="1.0" encoding="utf-8"?>
 </soap:Envelope>"""
 
 
-def transfer_get(service: Service, address: (str | bytes)) -> Response:
+def transfer_get(service: Service, address: (str | bytes), hass=HomeAssistant) -> Response:
     message_id = uuid.uuid4()
     our_id = uuid.uuid4()
 
@@ -30,4 +31,4 @@ def transfer_get(service: Service, address: (str | bytes)) -> Response:
         .replace("{{MessageID}}", str(message_id)) \
         .replace("{{OurID}}", str(our_id))
 
-    return requests.post(address, data=get_device)
+    return await hass.async_add_executor_job(requests.post(address, data=get_device))

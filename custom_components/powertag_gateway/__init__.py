@@ -1,6 +1,6 @@
 """PowerTag Link Gateway integration"""
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import Platform, CONF_HOST, CONF_PORT
+from homeassistant.const import Platform, CONF_HOST, CONF_PORT, CONF_INTERNAL_URL
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 from pymodbus.exceptions import ConnectionException
@@ -17,6 +17,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     host = entry.data.get(CONF_HOST)
     port = entry.data.get(CONF_PORT)
+    presentation_url = entry.data.get(CONF_INTERNAL_URL)
 
     try:
         client = SchneiderModbus(host, port)
@@ -24,7 +25,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         raise ConfigEntryNotReady from e
 
     hass.data[DOMAIN][entry.entry_id] = {
-        CONF_CLIENT: client
+        CONF_CLIENT: client,
+        CONF_INTERNAL_URL: presentation_url
     }
 
     hass.config_entries.async_setup_platforms(entry, PLATFORMS)

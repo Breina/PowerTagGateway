@@ -18,7 +18,7 @@ async def async_setup_entry(
     data = hass.data[DOMAIN][config_entry.entry_id]
 
     client = data[CONF_CLIENT]
-    presentation_url = data(CONF_INTERNAL_URL)
+    presentation_url = data[CONF_INTERNAL_URL]
 
     entities = []
 

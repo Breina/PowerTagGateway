@@ -47,14 +47,14 @@ def phase_sequence_to_phases(phase_sequence: PhaseSequence) -> [Phase]:
 
 
 class FeatureClass(Enum):
-    A1: [ProductType.A9MEM1520, ProductType.A9MEM1521, ProductType.A9MEM1522, ProductType.A9MEM1541,
-         ProductType.A9MEM1542]
-    A2: [ProductType.A9MEM1540, ProductType.A9MEM1543]
-    P1: [ProductType.A9MEM1561, ProductType.A9MEM1562, ProductType.A9MEM1563, ProductType.A9MEM1571,
-         ProductType.A9MEM1572]
-    F1: [ProductType.A9MEM1560, ProductType.A9MEM1570]
-    F2: [ProductType.A9MEM1573]
-    F3: [ProductType.A9MEM1564, ProductType.A9MEM1574]
+    A1 = [ProductType.A9MEM1520, ProductType.A9MEM1521, ProductType.A9MEM1522, ProductType.A9MEM1541,
+          ProductType.A9MEM1542]
+    A2 = [ProductType.A9MEM1540, ProductType.A9MEM1543]
+    P1 = [ProductType.A9MEM1561, ProductType.A9MEM1562, ProductType.A9MEM1563, ProductType.A9MEM1571,
+          ProductType.A9MEM1572]
+    F1 = [ProductType.A9MEM1560, ProductType.A9MEM1570]
+    F2 = [ProductType.A9MEM1573]
+    F3 = [ProductType.A9MEM1564, ProductType.A9MEM1574]
 
 
 def has_neutral(product_type: ProductType) -> bool:

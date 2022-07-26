@@ -2,7 +2,6 @@
   "config": {
     "step": {
       "user": {
-        "title": "PowerTag Link Gateway setup",
         "description": "Choose your configuration flow",
         "data": {
           "auto": "Discover automatically"

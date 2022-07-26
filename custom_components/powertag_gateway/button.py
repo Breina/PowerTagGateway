@@ -5,7 +5,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import GATEWAY_DOMAIN, CONF_CLIENT
+from .const import CONF_CLIENT, DOMAIN
 from .entity_base import PowerTagEntity, gateway_device_info, tag_device_info
 from .schneider_modbus import SchneiderModbus
 
@@ -15,7 +15,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up PowerTag Link Gateway from a config entry."""
 
-    data = hass.data[GATEWAY_DOMAIN][config_entry.entry_id]
+    data = hass.data[DOMAIN][config_entry.entry_id]
 
     client = data(CONF_CLIENT)
     presentation_url = data(CONF_INTERNAL_URL)

@@ -1,4 +1,6 @@
 """Platform for Schneider Energy."""
+from enum import Enum
+
 from homeassistant.components.sensor import SensorEntity, SensorDeviceClass, SensorStateClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_INTERNAL_URL
@@ -6,12 +8,55 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory, DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import CONF_CLIENT, DOMAIN
-from .entity_base import gateway_device_info, tag_device_info, has_neutral, \
-    phase_sequence_to_phases, phase_sequence_to_line_voltages, GatewayEntity, PowerTagEntity
-from .schneider_modbus import SchneiderModbus, Phase, LineVoltage
+from .const import CONF_CLIENT, DOMAIN, TAG_DOMAIN, GATEWAY_DOMAIN
+from .entity_base import gateway_device_info, tag_device_info
+from .schneider_modbus import SchneiderModbus, Phase, LineVoltage, PhaseSequence, ProductType
 
 PLATFORMS: list[str] = ["sensor"]
+
+
+def phase_sequence_to_phases(phase_sequence: PhaseSequence) -> [Phase]:
+    return {
+        PhaseSequence.A: [Phase.A],
+        PhaseSequence.B: [Phase.B],
+        PhaseSequence.C: [Phase.C],
+        PhaseSequence.ABC: [Phase.A, Phase.B, Phase.C],
+        PhaseSequence.ACB: [Phase.A, Phase.C, Phase.B],
+        PhaseSequence.BAC: [Phase.B, Phase.A, Phase.C],
+        PhaseSequence.BCA: [Phase.B, Phase.C, Phase.A],
+        PhaseSequence.CAB: [Phase.C, Phase.A, Phase.B],
+        PhaseSequence.CBA: [Phase.C, Phase.B, Phase.A]
+    }[phase_sequence]
+
+
+class FeatureClass(Enum):
+    A1 = [ProductType.A9MEM1520, ProductType.A9MEM1521, ProductType.A9MEM1522, ProductType.A9MEM1541,
+          ProductType.A9MEM1542]
+    A2 = [ProductType.A9MEM1540, ProductType.A9MEM1543]
+    P1 = [ProductType.A9MEM1561, ProductType.A9MEM1562, ProductType.A9MEM1563, ProductType.A9MEM1571,
+          ProductType.A9MEM1572]
+    F1 = [ProductType.A9MEM1560, ProductType.A9MEM1570]
+    F2 = [ProductType.A9MEM1573]
+    F3 = [ProductType.A9MEM1564, ProductType.A9MEM1574]
+
+
+def has_neutral(product_type: ProductType) -> bool:
+    feature_class = [fc for fc in FeatureClass if product_type in fc.value][0]
+    return feature_class in [FeatureClass.A2, FeatureClass.F2]
+
+
+def phase_sequence_to_line_voltages(phase_sequence: PhaseSequence, neutral: bool) -> [LineVoltage]:
+    if phase_sequence in [PhaseSequence.A, PhaseSequence.B, PhaseSequence.C]:
+        if not neutral:
+            return []
+        return {
+            PhaseSequence.A: [LineVoltage.A_N],
+            PhaseSequence.B: [LineVoltage.B_N],
+            PhaseSequence.C: [LineVoltage.C_N]
+        }[phase_sequence]
+    else:
+        return [LineVoltage.A_N, LineVoltage.B_N, LineVoltage.C_N] if neutral \
+            else [LineVoltage.A_B, LineVoltage.B_C, LineVoltage.C_A]
 
 
 async def async_setup_entry(
@@ -51,12 +96,7 @@ async def async_setup_entry(
             PowerTagLqiTag(client, modbus_address, tag_device),
             PowerTagLqiGateway(client, modbus_address, tag_device),
             PowerTagPerTag(client, modbus_address, tag_device),
-            PowerTagPerGateway(client, modbus_address, tag_device),
-            # PowerTagWirelessCommunicationValid(client, modbus_address, tag_device),
-            # PowerTagRadioCommunicationValid(client, modbus_address, tag_device),
-            # PowerTagResetPeakDemand(client, modbus_address, tag_device),
-            # PowerTagAlarmValid(client, modbus_address, tag_device),
-            # PowerTagGetAlarm(client, modbus_address, tag_device)
+            PowerTagPerGateway(client, modbus_address, tag_device)
         ])
 
         phase_sequence = client.tag_phase_sequence(modbus_address)
@@ -73,7 +113,30 @@ async def async_setup_entry(
     async_add_entities(entities, update_before_add=False)
 
 
-class GatewayTime(GatewayEntity, SensorEntity):
+class GatewayEntity(SensorEntity):
+    def __init__(self, client: SchneiderModbus, tag_device: DeviceInfo, sensor_name: str):
+        self._client = client
+
+        self._attr_device_info = tag_device
+        self._attr_name = f"{tag_device['name']} {sensor_name}"
+
+        serial = client.serial_number()
+        self._attr_unique_id = f"{GATEWAY_DOMAIN}{serial}{sensor_name}"
+
+
+class PowerTagEntity(SensorEntity):
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, entity_name: str):
+        self._client = client
+        self._modbus_index = modbus_index
+
+        self._attr_device_info = tag_device
+        self._attr_name = f"{tag_device['name']} {entity_name}"
+
+        serial = client.tag_serial_number(modbus_index)
+        self._attr_unique_id = f"{TAG_DOMAIN}{serial}{entity_name}"
+
+
+class GatewayTime(GatewayEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
 
     def __init__(self, client: SchneiderModbus, tag_device: DeviceInfo):
@@ -83,7 +146,7 @@ class GatewayTime(GatewayEntity, SensorEntity):
         self._attr_native_value = self._client.date_time()
 
 
-class PowerTagApparentPower(PowerTagEntity, SensorEntity):
+class PowerTagApparentPower(PowerTagEntity):
     _attr_device_class = SensorDeviceClass.APPARENT_POWER
     _attr_native_unit_of_measurement = "VA"
     _attr_state_class = SensorStateClass.MEASUREMENT
@@ -95,7 +158,7 @@ class PowerTagApparentPower(PowerTagEntity, SensorEntity):
         self._attr_native_value = self._client.tag_power_apparent_total(self._modbus_index)
 
 
-class PowerTagCurrent(PowerTagEntity, SensorEntity):
+class PowerTagCurrent(PowerTagEntity):
     _attr_device_class = SensorDeviceClass.CURRENT
     _attr_native_unit_of_measurement = "A"
     _attr_state_class = SensorStateClass.MEASUREMENT
@@ -112,7 +175,7 @@ class PowerTagCurrent(PowerTagEntity, SensorEntity):
         self._attr_native_value = self._client.tag_current(self._modbus_index, self.__phase)
 
 
-class PowerTagVoltage(PowerTagEntity, SensorEntity):
+class PowerTagVoltage(PowerTagEntity):
     _attr_device_class = SensorDeviceClass.VOLTAGE
     _attr_native_unit_of_measurement = "V"
     _attr_state_class = SensorStateClass.MEASUREMENT
@@ -129,7 +192,7 @@ class PowerTagVoltage(PowerTagEntity, SensorEntity):
         self._attr_native_value = self._client.tag_voltage(self._modbus_index, self.__line)
 
 
-class PowerTagActivePower(PowerTagEntity, SensorEntity):
+class PowerTagActivePower(PowerTagEntity):
     _attr_device_class = SensorDeviceClass.POWER
     _attr_native_unit_of_measurement = "W"
     _attr_state_class = SensorStateClass.MEASUREMENT
@@ -141,7 +204,7 @@ class PowerTagActivePower(PowerTagEntity, SensorEntity):
         self._attr_native_value = self._client.tag_power_active_total(self._modbus_index)
 
 
-class PowerTagActivePowerPerPhase(PowerTagEntity, SensorEntity):
+class PowerTagActivePowerPerPhase(PowerTagEntity):
     _attr_device_class = SensorDeviceClass.POWER
     _attr_native_unit_of_measurement = "W"
     _attr_state_class = SensorStateClass.MEASUREMENT
@@ -154,7 +217,7 @@ class PowerTagActivePowerPerPhase(PowerTagEntity, SensorEntity):
         self._attr_native_value = self._client.tag_power_active(self._modbus_index, self.__phase)
 
 
-class PowerTagDemandActivePower(PowerTagEntity, SensorEntity):
+class PowerTagDemandActivePower(PowerTagEntity):
     _attr_device_class = SensorDeviceClass.POWER
     _attr_native_unit_of_measurement = "W"
     _attr_state_class = SensorStateClass.MEASUREMENT
@@ -172,7 +235,7 @@ class PowerTagDemandActivePower(PowerTagEntity, SensorEntity):
         }
 
 
-class PowerTagTotalEnergy(PowerTagEntity, SensorEntity):
+class PowerTagTotalEnergy(PowerTagEntity):
     _attr_device_class = SensorDeviceClass.ENERGY
     _attr_native_unit_of_measurement = "Wh"
     _attr_state_class = SensorStateClass.TOTAL
@@ -184,7 +247,7 @@ class PowerTagTotalEnergy(PowerTagEntity, SensorEntity):
         self._attr_native_value = self._client.tag_energy_active_total(self._modbus_index)
 
 
-class PowerTagPartialEnergy(PowerTagEntity, SensorEntity):
+class PowerTagPartialEnergy(PowerTagEntity):
     _attr_device_class = SensorDeviceClass.ENERGY
     _attr_native_unit_of_measurement = "Wh"
     _attr_state_class = SensorStateClass.TOTAL
@@ -197,7 +260,7 @@ class PowerTagPartialEnergy(PowerTagEntity, SensorEntity):
         self._attr_last_reset = self._client.tag_load_operating_time_start(self._modbus_index)
 
 
-class PowerTagPowerFactor(PowerTagEntity, SensorEntity):
+class PowerTagPowerFactor(PowerTagEntity):
     _attr_device_class = SensorDeviceClass.POWER_FACTOR
     _attr_native_unit_of_measurement = "%"
     _attr_state_class = SensorStateClass.MEASUREMENT
@@ -209,7 +272,7 @@ class PowerTagPowerFactor(PowerTagEntity, SensorEntity):
         self._attr_native_value = self._client.tag_power_factor_total(self._modbus_index)
 
 
-class PowerTagRssiTag(PowerTagEntity, SensorEntity):
+class PowerTagRssiTag(PowerTagEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_device_class = SensorDeviceClass.SIGNAL_STRENGTH
     _attr_native_unit_of_measurement = "dBm"
@@ -225,7 +288,7 @@ class PowerTagRssiTag(PowerTagEntity, SensorEntity):
         }
 
 
-class PowerTagRssiGateway(PowerTagEntity, SensorEntity):
+class PowerTagRssiGateway(PowerTagEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_device_class = SensorDeviceClass.SIGNAL_STRENGTH
     _attr_native_unit_of_measurement = "dBm"
@@ -241,7 +304,7 @@ class PowerTagRssiGateway(PowerTagEntity, SensorEntity):
         }
 
 
-class PowerTagLqiTag(PowerTagEntity, SensorEntity):
+class PowerTagLqiTag(PowerTagEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_state_class = SensorStateClass.MEASUREMENT
 
@@ -255,7 +318,7 @@ class PowerTagLqiTag(PowerTagEntity, SensorEntity):
         }
 
 
-class PowerTagLqiGateway(PowerTagEntity, SensorEntity):
+class PowerTagLqiGateway(PowerTagEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_state_class = SensorStateClass.MEASUREMENT
 
@@ -269,7 +332,7 @@ class PowerTagLqiGateway(PowerTagEntity, SensorEntity):
         }
 
 
-class PowerTagPerTag(PowerTagEntity, SensorEntity):
+class PowerTagPerTag(PowerTagEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_state_class = SensorStateClass.MEASUREMENT
 
@@ -283,7 +346,7 @@ class PowerTagPerTag(PowerTagEntity, SensorEntity):
         }
 
 
-class PowerTagPerGateway(PowerTagEntity, SensorEntity):
+class PowerTagPerGateway(PowerTagEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_state_class = SensorStateClass.MEASUREMENT
 

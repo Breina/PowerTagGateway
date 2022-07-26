@@ -5,8 +5,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import CONF_CLIENT, DOMAIN
-from .entity_base import PowerTagEntity, gateway_device_info, tag_device_info
+from .const import CONF_CLIENT, DOMAIN, TAG_DOMAIN
+from .entity_base import gateway_device_info, tag_device_info
 from .schneider_modbus import SchneiderModbus
 
 
@@ -36,9 +36,21 @@ async def async_setup_entry(
         entities.append(PowerTagResetPeakDemand(client, modbus_address, tag_device))
 
     async_add_entities(entities, update_before_add=False)
+    
+
+class PowerTagEntity(ButtonEntity):
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, entity_name: str):
+        self._client = client
+        self._modbus_index = modbus_index
+
+        self._attr_device_info = tag_device
+        self._attr_name = f"{tag_device['name']} {entity_name}"
+
+        serial = client.tag_serial_number(modbus_index)
+        self._attr_unique_id = f"{TAG_DOMAIN}{serial}{entity_name}"
 
 
-class PowerTagResetPeakDemand(PowerTagEntity, ButtonEntity):
+class PowerTagResetPeakDemand(PowerTagEntity):
     def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
         super().__init__(client, modbus_index, tag_device, "reset peak demand")
 

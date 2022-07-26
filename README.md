@@ -1,8 +1,3 @@
-# iDrac power monitor
+# EcoStruxure PowerTag Link Gateway
 
-This integration will grab the power usage from your Dell servers' iDrac system.
-
-For this to work, the Redfish service must be running on it.
-
-## Installation
-
+This integration will grab data from a PowerTag Link Gateway and make entities from it.

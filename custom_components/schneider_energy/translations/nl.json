@@ -1,23 +1,35 @@
 {
-  "title": "iDrac power monitor",
+  "title": "PowerTag Link Gateway",
   "config": {
     "step": {
       "user": {
+        "description": "Kies je configuration manier",
         "data": {
-          "host": "Hostnaam van de iDrac instantie",
-          "username": "iDrac gebruikersnaam",
-          "password": "iDrac wachtwoord"
+          "auto": "Ontdenk Gateways automatisch"
+        }
+      },
+      "device": {
+        "title": "Apparaatselectie",
+        "description": "Kies je PowerTag Link Gateway apparaat",
+        "data": {
+          "device": "Apparaat"
+        }
+      },
+      "configure": {
+        "title": "Configureer apparaat",
+        "description": "Configureer je apparaat",
+        "data": {
+          "host": "[%key:common::config_flow::data::host%]",
+          "port": "[%key:common::config_flow::data::port%]"
         }
       }
     },
     "error": {
-      "cannot_connect": "Kan niet verbinden",
-      "invalid_auth": "Foute inloggegevens",
-      "redfish_config": "Redfish staat uit. Start de iDRAC GUI met een web browser en navigeer naar de Network Service pagina - Server -> iDRAC Settings -> Network -> Services -> Redfish. Zie dat het op Enabled staat.",
-      "unknown": "Onbekende fout"
+      "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
+      "unknown": "[%key:common::config_flow::error::unknown%]"
     },
     "abort": {
-      "already_configured": "Deze integratie is al geconfigureerd"
+      "already_configured": "[%key:common::config_flow::abort::already_configured_device%]"
     }
   }
 }

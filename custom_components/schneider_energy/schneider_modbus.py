@@ -510,3 +510,5 @@ class SchneiderModbus:
             return None
 
         return datetime(year, month, day, hour, minute, second, millisecond)
+
+SchneiderModbus("192.168.1.39", 20).name()

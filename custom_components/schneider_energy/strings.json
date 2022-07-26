@@ -1,21 +1,32 @@
 {
-  "title": "iDrac power monitor",
+  "title": "PowerTag Link Gateway",
   "config": {
     "step": {
       "user": {
-        "title": "iDrac power monitor",
-        "description": "Enter the iDrac's credentials.",
+        "title": "PowerTag Link Gateway setup",
+        "description": "Choose your configuration flow",
+        "data": {
+          "auto": "Discover automatically"
+        }
+      },
+      "device": {
+        "title": "Device selection",
+        "description": "Select your PowerTag Link Gateway device",
+        "data": {
+          "device": "Device"
+        }
+      },
+      "configure": {
+        "title": "Configure device",
+        "description": "Configure your device",
         "data": {
           "host": "[%key:common::config_flow::data::host%]",
-          "username": "[%key:common::config_flow::data::username%]",
-          "password": "[%key:common::config_flow::data::password%]"
+          "port": "[%key:common::config_flow::data::port%]"
         }
       }
     },
     "error": {
       "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
-      "invalid_auth": "[%key:common::config_flow::error::invalid_auth%]",
-      "redfish_config": "Redfish not enabled. Start the iDRAC GUI with a web browser and traverse to the Network Service page - Server -> iDRAC Settings -> Network -> Services -> Redfish. Verify that Enabled is selected.",
       "unknown": "[%key:common::config_flow::error::unknown%]"
     },
     "abort": {

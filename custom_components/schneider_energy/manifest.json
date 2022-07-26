@@ -1,14 +1,13 @@
 {
-  "domain": "dell_printer",
-  "name": "iDrac power monitor",
-  "config_flow": true,
-  "documentation": "https://www.home-assistant.io/integrations/idrac_power",
-  "requirements": [],
-  "dependencies": ["http"],
+  "domain": "powertag_gateway",
+  "name": "PowerTag Link Gateway",
+  "documentation": "https://github.com/Breina/PowerTagGateway",
+  "issue_tracker": "https://github.com/Breina/PowerTagGateway/issues",
   "codeowners": [
     "@Breina"
   ],
+  "requirements": [],
   "iot_class": "local_polling",
-  "version": "1.0.0",
-  "issue_tracker": "https://github.com/Breina/idrac_power_monitor/issues"
+  "config_flow": true,
+  "version": "0.0.1"
 }

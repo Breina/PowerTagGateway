@@ -23,7 +23,7 @@ def tag_device_info(client: SchneiderModbus, modbus_index: int, presentation_url
     return DeviceInfo(
         configuration_url=presentation_url,
         via_device=gateway_identification,
-        identifiers={(GATEWAY_DOMAIN, client.serial_number()), (TAG_DOMAIN, client.tag_serial_number(modbus_index))},
+        identifiers={(TAG_DOMAIN, client.tag_serial_number(modbus_index))},
         hw_version=client.tag_hardware_revision(modbus_index),
         sw_version=client.tag_firmware_revision(modbus_index),
         manufacturer=client.tag_vendor_name(modbus_index),
@@ -58,7 +58,7 @@ class FeatureClass(Enum):
 
 
 def has_neutral(product_type: ProductType) -> bool:
-    feature_class = [fc for fc in FeatureClass if product_type in fc.value]
+    feature_class = [fc for fc in FeatureClass if product_type in fc.value][0]
     return feature_class in [FeatureClass.A2, FeatureClass.F2]
 
 

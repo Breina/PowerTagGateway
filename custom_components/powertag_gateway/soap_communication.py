@@ -22,7 +22,7 @@ template = """<?xml version="1.0" encoding="utf-8"?>
 </soap:Envelope>"""
 
 
-def transfer_get(service: Service, address: (str | bytes), hass=HomeAssistant) -> Response:
+async def transfer_get(service: Service, address: (str | bytes), hass=HomeAssistant) -> Response:
     message_id = uuid.uuid4()
     our_id = uuid.uuid4()
 

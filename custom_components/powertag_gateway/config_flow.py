@@ -73,7 +73,7 @@ async def async_discovery(hass: HomeAssistant) -> list[DiscoveredDevice]:
     discovered_devices = []
 
     for service in services:
-        result = transfer_get(service, service.getXAddrs()[0], hass)
+        result = await transfer_get(service, service.getXAddrs()[0], hass)
         if result.status_code != 200:
             continue
 

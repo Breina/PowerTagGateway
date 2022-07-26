@@ -24,7 +24,7 @@ async def async_setup_entry(
 
     gateway_device = gateway_device_info(client, presentation_url)
 
-    entities.append(GatewayStatus(client, gateway_device))
+    # entities.append(GatewayStatus(client, gateway_device))
 
     for i in range(1, 100):
         modbus_address = client.modbus_address_of_node(1)
@@ -36,8 +36,8 @@ async def async_setup_entry(
         )
 
         entities.append([
-            PowerTagWirelessCommunicationValid(client, modbus_address, tag_device),
-            PowerTagRadioCommunicationValid(client, modbus_address, tag_device),
+            # PowerTagWirelessCommunicationValid(client, modbus_address, tag_device),
+            # PowerTagRadioCommunicationValid(client, modbus_address, tag_device),
             PowerTagAlarmValid(client, modbus_address, tag_device),
             PowerTagGetAlarm(client, modbus_address, tag_device)
         ])

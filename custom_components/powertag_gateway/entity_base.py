@@ -28,26 +28,3 @@ def tag_device_info(client: SchneiderModbus, modbus_index: int, presentation_url
         model=client.tag_product_model(modbus_index),
         name=client.tag_name(modbus_index)
     )
-
-
-class GatewayEntity(Entity):
-    def __init__(self, client: SchneiderModbus, tag_device: DeviceInfo, sensor_name: str):
-        self._client = client
-
-        self._attr_device_info = tag_device
-        self._attr_name = f"{tag_device['name']} {sensor_name}"
-
-        serial = client.serial_number()
-        self._attr_unique_id = f"{TAG_DOMAIN}{serial}{sensor_name}"
-
-
-class PowerTagEntity(Entity):
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, entity_name: str):
-        self._client = client
-        self._modbus_index = modbus_index
-
-        self._attr_device_info = tag_device
-        self._attr_name = f"{tag_device['name']} {entity_name}"
-
-        serial = client.tag_serial_number(modbus_index)
-        self._attr_unique_id = f"{TAG_DOMAIN}{serial}{entity_name}"

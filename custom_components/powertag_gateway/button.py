@@ -5,9 +5,9 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from custom_components.powertag_gateway.const import GATEWAY_DOMAIN, CONF_CLIENT
-from custom_components.powertag_gateway.entity_base import PowerTagEntity, gateway_device_info, tag_device_info
-from custom_components.powertag_gateway.schneider_modbus import SchneiderModbus
+from .const import GATEWAY_DOMAIN, CONF_CLIENT
+from .entity_base import PowerTagEntity, gateway_device_info, tag_device_info
+from .schneider_modbus import SchneiderModbus
 
 
 async def async_setup_entry(

@@ -4,10 +4,8 @@ from __future__ import annotations
 
 import logging
 import re
-import uuid
 from urllib.parse import urlparse
 
-import requests
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.const import CONF_HOST, CONF_PORT, CONF_DEVICE, CONF_INTERNAL_URL
@@ -27,7 +25,6 @@ from .const import (
     DPWS_PRESENTATION_URL,
     DPWS_FRIENDLY_NAME,
     DPWS_SERIAL_NUMBER,
-    CONF_CLIENT,
     DOMAIN
 )
 from .schneider_modbus import SchneiderModbus
@@ -170,7 +167,7 @@ class PowerTagFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             self.port = user_input[CONF_PORT]
             try:
                 return await self.async_step_connect()
-            except ConnectionException:
+            except Exception:
                 errors["base"] = "cannot_connect"
 
         return self.async_show_form(
@@ -215,7 +212,8 @@ class PowerTagFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_create_entry(
             title=self.name,
             data={
-                CONF_CLIENT: self.client,
+                CONF_HOST: self.host,
+                CONF_PORT: self.port,
                 CONF_INTERNAL_URL: self.presentation_url,
             },
         )

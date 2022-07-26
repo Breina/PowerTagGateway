@@ -1,5 +1,7 @@
+DOMAIN = 'powertag_gateway'
 GATEWAY_DOMAIN = 'PowerTagGateway'
 TAG_DOMAIN = 'PowerTag'
+
 DEFAULT_MODBUS_PORT = 502
 
 SCHNEIDER_QNAME = 'http://www.schneider-electric.com'

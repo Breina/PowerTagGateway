@@ -18,14 +18,19 @@ from wsdiscovery import QName
 from wsdiscovery.discovery import ThreadedWSDiscovery as WSDiscovery
 from wsdiscovery.service import Service
 
-from .schneider_modbus import SchneiderModbus
 from .const import (
     DEFAULT_MODBUS_PORT,
     SCHNEIDER_QNAME,
     SCHNEIDER_QNAME_GATEWAY,
-    GATEWAY_DOMAIN,
-    CONF_MANUAL_INPUT, DPWS_MODEL_NAME, DPWS_PRESENTATION_URL, DPWS_FRIENDLY_NAME, DPWS_SERIAL_NUMBER, CONF_CLIENT
+    CONF_MANUAL_INPUT,
+    DPWS_MODEL_NAME,
+    DPWS_PRESENTATION_URL,
+    DPWS_FRIENDLY_NAME,
+    DPWS_SERIAL_NUMBER,
+    CONF_CLIENT,
+    DOMAIN
 )
+from .schneider_modbus import SchneiderModbus
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -94,7 +99,7 @@ async def async_discovery(hass: HomeAssistant) -> list[DiscoveredDevice]:
     return discovered_devices
 
 
-class PowerTagFlowHandler(config_entries.ConfigFlow, domain=GATEWAY_DOMAIN):
+class PowerTagFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     """PowerTag config flow."""
 
     VERSION = 1
@@ -147,8 +152,8 @@ class PowerTagFlowHandler(config_entries.ConfigFlow, domain=GATEWAY_DOMAIN):
         discovered_devices = await async_discovery(self.hass)
         for device in discovered_devices:
             if not any(
-                device.serial_number == entry.unique_id
-                for entry in self._async_current_entries()
+                    device.serial_number == entry.unique_id
+                    for entry in self._async_current_entries()
             ):
                 self.devices.append(device)
 

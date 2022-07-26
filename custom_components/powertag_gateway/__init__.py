@@ -1,11 +1,11 @@
 """PowerTag Link Gateway integration"""
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform, CONF_HOST, CONF_PORT
-from homeassistant.core import HomeAssistant, DOMAIN
+from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 from pymodbus.exceptions import ConnectionException
 
-from .const import CONF_CLIENT
+from .const import CONF_CLIENT, DOMAIN
 from .schneider_modbus import SchneiderModbus
 
 PLATFORMS = [Platform.BINARY_SENSOR, Platform.BUTTON, Platform.SENSOR]

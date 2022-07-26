@@ -31,6 +31,7 @@ from .const import (
     DOMAIN
 )
 from .schneider_modbus import SchneiderModbus
+from .soap_communication import transfer_get
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -75,17 +76,7 @@ async def async_discovery(hass: HomeAssistant) -> list[DiscoveredDevice]:
     discovered_devices = []
 
     for service in services:
-        address = service.getXAddrs()[0]
-
-        message_id = uuid.uuid4()
-        our_id = uuid.uuid4()
-        with open("../templates/transfer_get.xml") as transfer_get:
-            get_device = transfer_get.read() \
-                .replace("{{To}}", service.getEPR()) \
-                .replace("{{MessageID}}", str(message_id)) \
-                .replace("{{OurID}}", str(our_id))
-
-        result = requests.post(address, data=get_device)
+        result = transfer_get(service, service.getXAddrs()[0])
         if result.status_code != 200:
             continue
 

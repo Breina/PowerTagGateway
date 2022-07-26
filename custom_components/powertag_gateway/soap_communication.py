@@ -1,4 +1,10 @@
-<?xml version="1.0" encoding="utf-8"?>
+import uuid
+
+import requests
+from requests import Response
+from wsdiscovery.service import Service
+
+template = """<?xml version="1.0" encoding="utf-8"?>
 <soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/08/addressing">
     <soap:Header>
         <wsa:To>{{To}}</wsa:To>
@@ -12,4 +18,16 @@
         </wsa:From>
     </soap:Header>
     <soap:Body/>
-</soap:Envelope>
+</soap:Envelope>"""
+
+
+def transfer_get(service: Service, address: (str | bytes)) -> Response:
+    message_id = uuid.uuid4()
+    our_id = uuid.uuid4()
+
+    get_device = template \
+        .replace("{{To}}", service.getEPR()) \
+        .replace("{{MessageID}}", str(message_id)) \
+        .replace("{{OurID}}", str(our_id))
+
+    return requests.post(address, data=get_device)

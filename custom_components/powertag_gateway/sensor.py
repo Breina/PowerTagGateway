@@ -73,7 +73,7 @@ async def async_setup_entry(
 
     gateway_device = gateway_device_info(client, presentation_url)
 
-    # entities.append(GatewayTime(client, gateway_device))
+    entities.append(GatewayTime(client, gateway_device))
 
     for i in range(1, 100):
         modbus_address = client.modbus_address_of_node(1)
@@ -91,12 +91,12 @@ async def async_setup_entry(
             PowerTagTotalEnergy(client, modbus_address, tag_device),
             PowerTagPartialEnergy(client, modbus_address, tag_device),
             PowerTagPowerFactor(client, modbus_address, tag_device),
-            # PowerTagRssiTag(client, modbus_address, tag_device),
-            # PowerTagRssiGateway(client, modbus_address, tag_device),
-            # PowerTagLqiTag(client, modbus_address, tag_device),
-            # PowerTagLqiGateway(client, modbus_address, tag_device),
-            # PowerTagPerTag(client, modbus_address, tag_device),
-            # PowerTagPerGateway(client, modbus_address, tag_device)
+            PowerTagRssiTag(client, modbus_address, tag_device),
+            PowerTagRssiGateway(client, modbus_address, tag_device),
+            PowerTagLqiTag(client, modbus_address, tag_device),
+            PowerTagLqiGateway(client, modbus_address, tag_device),
+            PowerTagPerTag(client, modbus_address, tag_device),
+            PowerTagPerGateway(client, modbus_address, tag_device)
         ])
 
         phase_sequence = client.tag_phase_sequence(modbus_address)

@@ -115,7 +115,7 @@ class GatewayStatus(GatewayEntity, BinarySensorEntity):
 
     async def async_update(self):
         status = self._client.status()
-        self._attr_is_on = status == LinkStatus.OPERATING
+        self._attr_is_on = status != LinkStatus.OPERATING
 
         self._attr_extra_state_attributes["status"] = {
             LinkStatus.OPERATING: "Operating",

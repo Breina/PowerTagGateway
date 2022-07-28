@@ -170,7 +170,7 @@ class SchneiderModbus:
 
     def status(self) -> LinkStatus:
         """PowerTag Link gateway status and diagnostic register"""
-        bitmap = self.__read(0x0070, 1, POWERTAG_LINK_SLAVE_ID).decode_16bit_uint()
+        bitmap = self.__read_int_16(0x0070, POWERTAG_LINK_SLAVE_ID)
         return LinkStatus(bitmap)
 
     # Date and Time

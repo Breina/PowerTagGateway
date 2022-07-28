@@ -13,7 +13,7 @@ def gateway_device_info(client: SchneiderModbus, presentation_url: str) -> Devic
         hw_version=client.hardware_version(),
         sw_version=client.firmware_version(),
         manufacturer=client.manufacturer(),
-        model=client.product_model(),
+        model=client.product_code(),
         name=client.name()
     )
 

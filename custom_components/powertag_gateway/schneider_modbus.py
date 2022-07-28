@@ -405,37 +405,37 @@ class SchneiderModbus:
 
     # Identification and Status Register
 
-    def product_id(self):
+    def product_id(self) -> int | None:
         """Product ID of the synthesis table"""
         return self.__read_int_16(0x0001, SYNTHESIS_TABLE_SLAVE_ID)
 
-    def manufacturer(self):
+    def manufacturer(self) -> String | None:
         """Product ID of the synthesis table"""
         return self.__read_string(0x0002, 16, SYNTHESIS_TABLE_SLAVE_ID, 32)
 
-    def product_code(self):
+    def product_code(self) -> String | None:
         """Commercial reference of the gateway"""
         return self.__read_string(0x0012, 16, SYNTHESIS_TABLE_SLAVE_ID, 32)
 
-    def product_range(self):
+    def product_range(self) -> String | None:
         """Product range of the gateway"""
         return self.__read_string(0x0022, 8, SYNTHESIS_TABLE_SLAVE_ID, 16)
 
-    def product_model(self):
+    def product_model(self) -> String | None:
         """Product model"""
         return self.__read_string(0x002A, 8, SYNTHESIS_TABLE_SLAVE_ID, 16)
 
-    def name(self):
+    def name(self) -> String | None:
         """Asset name"""
         return self.__read_string(0x0032, 10, SYNTHESIS_TABLE_SLAVE_ID, 20)
 
-    def product_vendor_url(self):
+    def product_vendor_url(self) -> String | None:
         """Vendor URL"""
         return self.__read_string(0x003C, 17, SYNTHESIS_TABLE_SLAVE_ID, 34)
 
     # Wireless Configured Devices – 100 Devices
 
-    def modbus_address_of_node(self, node_index: int):
+    def modbus_address_of_node(self, node_index: int) -> int | None:
         return self.__read_int_16(0x012C + node_index - 1, SYNTHESIS_TABLE_SLAVE_ID)
 
     # Helper functions

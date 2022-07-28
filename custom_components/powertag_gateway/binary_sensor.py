@@ -5,8 +5,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory, DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import CONF_CLIENT, DOMAIN, TAG_DOMAIN, GATEWAY_DOMAIN
-from .entity_base import tag_device_info, gateway_device_info
+from .const import CONF_CLIENT, DOMAIN
+from .entity_base import PowerTagEntity, tag_device_info, gateway_device_info, GatewayEntity
 from .schneider_modbus import SchneiderModbus, LinkStatus
 
 
@@ -45,30 +45,7 @@ async def async_setup_entry(
     async_add_entities(entities, update_before_add=False)
 
 
-class GatewayEntity(BinarySensorEntity):
-    def __init__(self, client: SchneiderModbus, tag_device: DeviceInfo, sensor_name: str):
-        self._client = client
-
-        self._attr_device_info = tag_device
-        self._attr_name = f"{tag_device['name']} {sensor_name}"
-
-        serial = client.serial_number()
-        self._attr_unique_id = f"{GATEWAY_DOMAIN}{serial}{sensor_name}"
-
-
-class PowerTagEntity(BinarySensorEntity):
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, entity_name: str):
-        self._client = client
-        self._modbus_index = modbus_index
-
-        self._attr_device_info = tag_device
-        self._attr_name = f"{tag_device['name']} {entity_name}"
-
-        serial = client.tag_serial_number(modbus_index)
-        self._attr_unique_id = f"{TAG_DOMAIN}{serial}{entity_name}"
-
-
-class PowerTagWirelessCommunicationValid(PowerTagEntity):
+class PowerTagWirelessCommunicationValid(PowerTagEntity, BinarySensorEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
 
@@ -79,7 +56,7 @@ class PowerTagWirelessCommunicationValid(PowerTagEntity):
         self._attr_is_on = self._client.tag_wireless_communication_valid(self._modbus_index)
 
 
-class PowerTagRadioCommunicationValid(PowerTagEntity):
+class PowerTagRadioCommunicationValid(PowerTagEntity, BinarySensorEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
 
@@ -90,7 +67,7 @@ class PowerTagRadioCommunicationValid(PowerTagEntity):
         self._attr_is_on = self._client.tag_radio_communication_valid(self._modbus_index)
 
 
-class PowerTagAlarmValid(PowerTagEntity):
+class PowerTagAlarmValid(PowerTagEntity, BinarySensorEntity):
     _attr_device_class = BinarySensorDeviceClass.PROBLEM
 
     def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
@@ -100,7 +77,7 @@ class PowerTagAlarmValid(PowerTagEntity):
         self._attr_is_on = not self._client.tag_is_alarm_valid(self._modbus_index)
 
 
-class PowerTagGetAlarm(PowerTagEntity):
+class PowerTagGetAlarm(PowerTagEntity, BinarySensorEntity):
     _attr_device_class = BinarySensorDeviceClass.PROBLEM
 
     def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
@@ -128,7 +105,7 @@ class PowerTagGetAlarm(PowerTagEntity):
             }
 
 
-class GatewayStatus(GatewayEntity):
+class GatewayStatus(GatewayEntity, BinarySensorEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_device_class = BinarySensorDeviceClass.PROBLEM
 

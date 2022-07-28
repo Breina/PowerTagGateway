@@ -1,7 +1,9 @@
+from enum import Enum
+
 from homeassistant.helpers.entity import Entity, DeviceInfo
 
 from .const import GATEWAY_DOMAIN, TAG_DOMAIN
-from .schneider_modbus import SchneiderModbus
+from .schneider_modbus import SchneiderModbus, Phase, LineVoltage, PhaseSequence, ProductType
 
 
 def gateway_device_info(client: SchneiderModbus, presentation_url: str) -> DeviceInfo:
@@ -28,6 +30,50 @@ def tag_device_info(client: SchneiderModbus, modbus_index: int, presentation_url
         model=client.tag_product_model(modbus_index),
         name=client.tag_name(modbus_index)
     )
+
+
+def phase_sequence_to_phases(phase_sequence: PhaseSequence) -> [Phase]:
+    return {
+        PhaseSequence.A: [Phase.A],
+        PhaseSequence.B: [Phase.B],
+        PhaseSequence.C: [Phase.C],
+        PhaseSequence.ABC: [Phase.A, Phase.B, Phase.C],
+        PhaseSequence.ACB: [Phase.A, Phase.C, Phase.B],
+        PhaseSequence.BAC: [Phase.B, Phase.A, Phase.C],
+        PhaseSequence.BCA: [Phase.B, Phase.C, Phase.A],
+        PhaseSequence.CAB: [Phase.C, Phase.A, Phase.B],
+        PhaseSequence.CBA: [Phase.C, Phase.B, Phase.A]
+    }[phase_sequence]
+
+
+class FeatureClass(Enum):
+    A1 = [ProductType.A9MEM1520, ProductType.A9MEM1521, ProductType.A9MEM1522, ProductType.A9MEM1541,
+          ProductType.A9MEM1542]
+    A2 = [ProductType.A9MEM1540, ProductType.A9MEM1543]
+    P1 = [ProductType.A9MEM1561, ProductType.A9MEM1562, ProductType.A9MEM1563, ProductType.A9MEM1571,
+          ProductType.A9MEM1572]
+    F1 = [ProductType.A9MEM1560, ProductType.A9MEM1570]
+    F2 = [ProductType.A9MEM1573]
+    F3 = [ProductType.A9MEM1564, ProductType.A9MEM1574]
+
+
+def has_neutral(product_type: ProductType) -> bool:
+    feature_class = [fc for fc in FeatureClass if product_type in fc.value][0]
+    return feature_class in [FeatureClass.A2, FeatureClass.F2]
+
+
+def phase_sequence_to_line_voltages(phase_sequence: PhaseSequence, neutral: bool) -> [LineVoltage]:
+    if phase_sequence in [PhaseSequence.A, PhaseSequence.B, PhaseSequence.C]:
+        if not neutral:
+            return []
+        return {
+            PhaseSequence.A: [LineVoltage.A_N],
+            PhaseSequence.B: [LineVoltage.B_N],
+            PhaseSequence.C: [LineVoltage.C_N]
+        }[phase_sequence]
+    else:
+        return [LineVoltage.A_N, LineVoltage.B_N, LineVoltage.C_N] if neutral \
+            else [LineVoltage.A_B, LineVoltage.B_C, LineVoltage.C_A]
 
 
 class GatewayEntity(Entity):

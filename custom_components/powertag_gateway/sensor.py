@@ -39,7 +39,7 @@ async def async_setup_entry(
             client, modbus_address, presentation_url, next(iter(gateway_device["identifiers"]))
         )
 
-        entities.append([
+        entities.extend([
             PowerTagApparentPower(client, modbus_address, tag_device),
             PowerTagActivePower(client, modbus_address, tag_device),
             PowerTagDemandActivePower(client, modbus_address, tag_device),
@@ -51,12 +51,7 @@ async def async_setup_entry(
             PowerTagLqiTag(client, modbus_address, tag_device),
             PowerTagLqiGateway(client, modbus_address, tag_device),
             PowerTagPerTag(client, modbus_address, tag_device),
-            PowerTagPerGateway(client, modbus_address, tag_device),
-            # PowerTagWirelessCommunicationValid(client, modbus_address, tag_device),
-            # PowerTagRadioCommunicationValid(client, modbus_address, tag_device),
-            # PowerTagResetPeakDemand(client, modbus_address, tag_device),
-            # PowerTagAlarmValid(client, modbus_address, tag_device),
-            # PowerTagGetAlarm(client, modbus_address, tag_device)
+            PowerTagPerGateway(client, modbus_address, tag_device)
         ])
 
         phase_sequence = client.tag_phase_sequence(modbus_address)
@@ -65,7 +60,7 @@ async def async_setup_entry(
         for phase in phase_sequence_to_phases(phase_sequence):
             entities.append(PowerTagCurrent(client, modbus_address, tag_device, phase))
             if neutral:
-                PowerTagActivePowerPerPhase(client, modbus_address, tag_device, phase)
+                entities.append(PowerTagActivePowerPerPhase(client, modbus_address, tag_device, phase))
 
         for line_voltage in phase_sequence_to_line_voltages(phase_sequence, neutral):
             entities.append(PowerTagVoltage(client, modbus_address, tag_device, line_voltage))

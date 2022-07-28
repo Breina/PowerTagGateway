@@ -35,7 +35,7 @@ async def async_setup_entry(
             client, modbus_address, presentation_url, next(iter(gateway_device["identifiers"]))
         )
 
-        entities.append([
+        entities.extend([
             PowerTagWirelessCommunicationValid(client, modbus_address, tag_device),
             PowerTagRadioCommunicationValid(client, modbus_address, tag_device),
             PowerTagAlarmValid(client, modbus_address, tag_device),

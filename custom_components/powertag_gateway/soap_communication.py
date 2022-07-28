@@ -31,4 +31,4 @@ async def transfer_get(service: Service, address: (str | bytes), hass=HomeAssist
         .replace("{{MessageID}}", str(message_id)) \
         .replace("{{OurID}}", str(our_id))
 
-    return await hass.async_add_executor_job(requests.post(address, data=get_device))
+    return await hass.async_add_executor_job(requests.post, address, data=get_device)

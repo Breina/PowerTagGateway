@@ -1,23 +1,20 @@
 {
-  "title": "PowerTag Link Gateway",
   "config": {
+    "flow_title": "PowerTag Link Gateway",
     "step": {
       "user": {
-        "title": "PowerTag Link Gateway setup",
         "description": "Choose your configuration flow",
         "data": {
           "auto": "Discover automatically"
         }
       },
       "device": {
-        "title": "Device selection",
         "description": "Select your PowerTag Link Gateway device",
         "data": {
           "device": "Device"
         }
       },
       "configure": {
-        "title": "Configure device",
         "description": "Configure your device",
         "data": {
           "host": "[%key:common::config_flow::data::host%]",

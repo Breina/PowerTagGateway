@@ -22,17 +22,20 @@ template = """<?xml version="1.0" encoding="utf-8"?>
 </soap:Envelope>"""
 
 
-async def transfer_get(service: Service, address: (str | bytes), hass=HomeAssistant) -> Response:
-    message_id = uuid.uuid4()
-    our_id = uuid.uuid4()
+class Soapy:
+    def __init__(self, service: Service, hass=HomeAssistant):
+        message_id = uuid.uuid4()
+        our_id = uuid.uuid4()
 
-    get_device = template \
-        .replace("{{To}}", service.getEPR()) \
-        .replace("{{MessageID}}", str(message_id)) \
-        .replace("{{OurID}}", str(our_id))
+        self.get_device = template \
+            .replace("{{To}}", service.getEPR()) \
+            .replace("{{MessageID}}", str(message_id)) \
+            .replace("{{OurID}}", str(our_id))
+        self.hass = hass
+        self.address = service.getXAddrs()[0]
 
-    return await hass.async_add_executor_job(fetch_device(address, get_device))
+    async def transfer_get(self) -> Response:
+        return await self.hass.async_add_executor_job(self.fetch_device)
 
-
-async def fetch_device(address, get_device):
-    return requests.post(address, data=get_device)
+    def fetch_device(self):
+        return requests.post(self.address, data=self.get_device)

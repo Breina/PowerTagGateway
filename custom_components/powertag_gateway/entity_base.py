@@ -59,7 +59,7 @@ class FeatureClass(Enum):
 
 def has_neutral(product_type: ProductType) -> bool:
     feature_class = [fc for fc in FeatureClass if product_type in fc.value][0]
-    return feature_class in [FeatureClass.A2, FeatureClass.F2]
+    return feature_class not in [FeatureClass.A2, FeatureClass.F2]
 
 
 def phase_sequence_to_line_voltages(phase_sequence: PhaseSequence, neutral: bool) -> [LineVoltage]:

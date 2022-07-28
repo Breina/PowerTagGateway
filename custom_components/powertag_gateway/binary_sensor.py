@@ -81,7 +81,7 @@ class PowerTagGetAlarm(PowerTagEntity, BinarySensorEntity):
     _attr_device_class = BinarySensorDeviceClass.PROBLEM
 
     def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
-        super().__init__(client, modbus_index, tag_device, "alarm valid")
+        super().__init__(client, modbus_index, tag_device, "alarm info")
         self.__product_range = self._client.tag_product_range(self._modbus_index)
 
     async def async_update(self):

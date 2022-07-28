@@ -111,6 +111,7 @@ class GatewayStatus(GatewayEntity, BinarySensorEntity):
 
     def __init__(self, client: SchneiderModbus, tag_device: DeviceInfo):
         super().__init__(client, tag_device, "status")
+        self._attr_extra_state_attributes = {}
 
     async def async_update(self):
         status = self._client.status()

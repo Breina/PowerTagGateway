@@ -409,27 +409,27 @@ class SchneiderModbus:
         """Product ID of the synthesis table"""
         return self.__read_int_16(0x0001, SYNTHESIS_TABLE_SLAVE_ID)
 
-    def manufacturer(self) -> String | None:
+    def manufacturer(self) -> str | None:
         """Product ID of the synthesis table"""
         return self.__read_string(0x0002, 16, SYNTHESIS_TABLE_SLAVE_ID, 32)
 
-    def product_code(self) -> String | None:
+    def product_code(self) -> str | None:
         """Commercial reference of the gateway"""
         return self.__read_string(0x0012, 16, SYNTHESIS_TABLE_SLAVE_ID, 32)
 
-    def product_range(self) -> String | None:
+    def product_range(self) -> str | None:
         """Product range of the gateway"""
         return self.__read_string(0x0022, 8, SYNTHESIS_TABLE_SLAVE_ID, 16)
 
-    def product_model(self) -> String | None:
+    def product_model(self) -> str | None:
         """Product model"""
         return self.__read_string(0x002A, 8, SYNTHESIS_TABLE_SLAVE_ID, 16)
 
-    def name(self) -> String | None:
+    def name(self) -> str | None:
         """Asset name"""
         return self.__read_string(0x0032, 10, SYNTHESIS_TABLE_SLAVE_ID, 20)
 
-    def product_vendor_url(self) -> String | None:
+    def product_vendor_url(self) -> str | None:
         """Vendor URL"""
         return self.__read_string(0x003C, 17, SYNTHESIS_TABLE_SLAVE_ID, 34)
 

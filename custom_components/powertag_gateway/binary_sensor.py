@@ -27,7 +27,7 @@ async def async_setup_entry(
     entities.append(GatewayStatus(client, gateway_device))
 
     for i in range(1, 100):
-        modbus_address = client.modbus_address_of_node(1)
+        modbus_address = client.modbus_address_of_node(i)
         if modbus_address is None:
             break
 

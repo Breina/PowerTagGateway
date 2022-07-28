@@ -25,7 +25,7 @@ async def async_setup_entry(
     gateway_device = gateway_device_info(client, presentation_url)
 
     for i in range(1, 100):
-        modbus_address = client.modbus_address_of_node(1)
+        modbus_address = client.modbus_address_of_node(i)
         if modbus_address is None:
             break
 

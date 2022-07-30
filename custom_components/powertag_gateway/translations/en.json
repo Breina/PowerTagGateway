@@ -2,7 +2,7 @@
   "config": {
     "step": {
       "user": {
-        "description": "Choose your configuration flow",
+        "description": "Search the network?",
         "data": {
           "auto": "Discover automatically"
         }
@@ -14,7 +14,11 @@
         }
       },
       "configure": {
-        "description": "Configure your device"
+        "description": "Configure the some network parameters",
+        "data": {
+          "host": "Host",
+          "port": "Modbus TCP port"
+        }
       }
     }
   }

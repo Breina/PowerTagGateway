@@ -2,7 +2,7 @@
   "config": {
     "step": {
       "user": {
-        "description": "Kies je configuration manier",
+        "description": "Doorzoek je netwerk?",
         "data": {
           "auto": "Ontdenk Gateways automatisch"
         }
@@ -14,7 +14,11 @@
         }
       },
       "configure": {
-        "description": "Configureer je apparaat"
+        "description": "Configureer enkele netwerk parameters",
+        "data": {
+          "host": "Host",
+          "port": "Modbus TCP poort"
+        }
       }
     }
   }

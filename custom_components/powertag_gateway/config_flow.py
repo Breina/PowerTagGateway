@@ -11,6 +11,7 @@ from homeassistant import config_entries
 from homeassistant.const import CONF_HOST, CONF_PORT, CONF_DEVICE, CONF_INTERNAL_URL
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
+import homeassistant.helpers.config_validation as cv
 from pymodbus.exceptions import ConnectionException
 from wsdiscovery import QName
 from wsdiscovery.discovery import ThreadedWSDiscovery as WSDiscovery
@@ -176,10 +177,11 @@ class PowerTagFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema(
                 {
                     vol.Required(CONF_HOST, default=self.host): str,
-                    vol.Required(CONF_PORT, default=self.port): int,
+                    vol.Required(CONF_PORT, default=self.port): cv.port,
                 }
             ),
             errors=errors,
+            last_step=True
         )
 
     async def async_step_connect(self) -> FlowResult:

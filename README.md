@@ -1,5 +1,7 @@
 # EcoStruxure PowerTag Link Gateway
 
+[![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
+
 An integration to fully integrate Schneider's PowerTag ecosystem into Home Assistant.
 This will enable monitor electric circuits in great detail.
 
@@ -12,6 +14,9 @@ This will enable monitor electric circuits in great detail.
 * **Demand**: active power, maximum active power (resettable) and timestamp of maximum active power
 * **Alarm**: current state and its reasons
 * **Diagnostics**: gateway status, LQI, RSSI, packet loss, connectivity status
+
+![Overview of a PowerTag device](images/Features_PowerTag.png)
+![Example of a specific sensor](images/Features_Sensor.png)
 
 ## Compatibility
 
@@ -44,3 +49,62 @@ This will enable monitor electric circuits in great detail.
 >
 > Any PowerTags, HeatTags or control modules not mentioned here, although compatible with the gateway, are not supported by this integration.
 > If integration is needed, please [create an issue](https://github.com/Breina/PowerTagGateway/issues) requesting it as an additional feature.
+
+
+# Installation
+
+## Preparation
+
+It is assumed that you have configured your gateway and all of its powertags.
+
+A hard requirement for this integration to work is the modbus TCP service to be enabled, which it is by default.
+To check whether this is the case, open the device's configuration webpage through navigating to its IP address in your web browser.
+
+Navigate to _SETTINGS_ > _IP NETWORK SERVICES_
+
+![The IP services configuration](images/Web_config.png)
+
+Check that the _MODBUS TCP_ service is enabled.
+Its port is set to 502 by default, if you diverge from this, **please keep your port number in mind for later**.
+
+To make your life easier later, it's also recommended to enable the _DISCOVERY_ service, its port doesn't matter.
+
+## Installation
+
+### HACS
+
+> **Note**
+> 
+> This integration requires [HACS](https://github.com/hacs/integration) to be installed
+
+1. Open HACS
+2. Open the options in the top right and select _Custom repositories_
+3. Enter this repository's URL (`https://github.com/Breina/PowerTagGateway`) under the Category _Integration_.
+4. Press _Add_
+5. _+ EXPLORE & DOWNLOAD REPOSITORIES_
+6. Find _NAD Multi-room Audio Controller_ in this list
+7. _DOWNLOAD THIS REPOSITORY WITH HACS_
+8. _DOWNLOAD_
+9. Restart Home Assistant (_Settings_ > _System_ > _RESTART_)
+
+### Integration
+
+ 1. Navigate to the integrations page: _Settings_ > _Devices & Services_
+ 2. _+ ADD INTEGRATION_
+ 3. Select _PowerTag Link Gateway_ in this selection window
+ 4. **Search the network?** If the *DISCOVERY* service is enabled, the *Discover automatically* option can be checked. 
+    Otherwise, move on to the next step.
+    1. If the discovery was successful, the next step will present you with the gateways which were discovered.
+       Select one or choose to set the host address manually.
+ 5. Enter the host address (without `http://`) and the modbus TCP port (default 502) of your gateway.
+ 6. If successful, you can now select to which areas the new devices belong.
+    All entities are now created.
+
+### Adding to the energy dashboard
+
+![Monitor individual devices](images/Features_Energy_panel.png)
+
+ 1. Navigate to the energy configuration page: _Settings_ > _Dashboards_ > _Energy_
+ 2. Depending on where you added your PowerTags, press _ADD DEVICE_ or _ADD_SOLAR_PRODUCTION_.
+ 3. Select the PowerTag entity you want to add (ends with _'total energy'_)
+ 4. _SAVE_

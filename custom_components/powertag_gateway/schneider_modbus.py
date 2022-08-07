@@ -5,9 +5,10 @@ from datetime import datetime
 from pymodbus.client.sync import ModbusTcpClient as ModbusClient
 from pymodbus.constants import Endian
 from pymodbus.payload import BinaryPayloadDecoder, BinaryPayloadBuilder
+from pymodbus.pdu import ExceptionResponse
 
 POWERTAG_LINK_SLAVE_ID = 255
-SYNTHESIS_TABLE_SLAVE_ID = 247
+SYNTHESIS_TABLE_SLAVE_ID_START = 247
 
 decoder = lambda registers: BinaryPayloadDecoder.fromRegisters(
     registers, byteorder=Endian.Big, wordorder=Endian.Big
@@ -136,6 +137,16 @@ class SchneiderModbus:
     def __init__(self, host, port=502, timeout=5):
         self.client = ModbusClient(host, port, timeout=timeout)
         self.client.connect()
+        self.synthetic_slave_id = self.find_synthentic_table_slave_id()
+
+    def find_synthentic_table_slave_id(self):
+        for slave_id in range(SYNTHESIS_TABLE_SLAVE_ID_START, 1, -1):
+            try:
+                self.__read_int_16(0x0001, slave_id)
+                return slave_id
+            except ConnectionError:
+                continue
+        raise ConnectionError("Could not find synthetic slave ID")
 
     # Identification
     def hardware_version(self) -> str:
@@ -407,36 +418,36 @@ class SchneiderModbus:
 
     def product_id(self) -> int | None:
         """Product ID of the synthesis table"""
-        return self.__read_int_16(0x0001, SYNTHESIS_TABLE_SLAVE_ID)
+        return self.__read_int_16(0x0001, self.synthetic_slave_id)
 
     def manufacturer(self) -> str | None:
         """Product ID of the synthesis table"""
-        return self.__read_string(0x0002, 16, SYNTHESIS_TABLE_SLAVE_ID, 32)
+        return self.__read_string(0x0002, 16, self.synthetic_slave_id, 32)
 
     def product_code(self) -> str | None:
         """Commercial reference of the gateway"""
-        return self.__read_string(0x0012, 16, SYNTHESIS_TABLE_SLAVE_ID, 32)
+        return self.__read_string(0x0012, 16, self.synthetic_slave_id, 32)
 
     def product_range(self) -> str | None:
         """Product range of the gateway"""
-        return self.__read_string(0x0022, 8, SYNTHESIS_TABLE_SLAVE_ID, 16)
+        return self.__read_string(0x0022, 8, self.synthetic_slave_id, 16)
 
     def product_model(self) -> str | None:
         """Product model"""
-        return self.__read_string(0x002A, 8, SYNTHESIS_TABLE_SLAVE_ID, 16)
+        return self.__read_string(0x002A, 8, self.synthetic_slave_id, 16)
 
     def name(self) -> str | None:
         """Asset name"""
-        return self.__read_string(0x0032, 10, SYNTHESIS_TABLE_SLAVE_ID, 20)
+        return self.__read_string(0x0032, 10, self.synthetic_slave_id, 20)
 
     def product_vendor_url(self) -> str | None:
         """Vendor URL"""
-        return self.__read_string(0x003C, 17, SYNTHESIS_TABLE_SLAVE_ID, 34)
+        return self.__read_string(0x003C, 17, self.synthetic_slave_id, 34)
 
     # Wireless Configured Devices – 100 Devices
 
     def modbus_address_of_node(self, node_index: int) -> int | None:
-        return self.__read_int_16(0x012C + node_index - 1, SYNTHESIS_TABLE_SLAVE_ID)
+        return self.__read_int_16(0x012C + node_index - 1, self.synthetic_slave_id)
 
     # Helper functions
 
@@ -445,7 +456,10 @@ class SchneiderModbus:
         print(response)
 
     def __read(self, address: int, count: int, unit: int):
-        return self.client.read_holding_registers(address, count, unit=unit).registers
+        response = self.client.read_holding_registers(address, count, unit=unit)
+        if isinstance(response, ExceptionResponse):
+            raise ConnectionError(str(response))
+        return response.registers
 
     def __read_string(self, address: int, count: int, unit: int, string_length: int) -> str | None:
         registers = self.__read(address, count, unit)

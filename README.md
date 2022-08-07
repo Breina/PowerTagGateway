@@ -45,10 +45,21 @@ This will enable monitor electric circuits in great detail.
 * [A9MEM1573: PowerTag Flex 63A 3P top and bottom position](https://www.se.com/ww/en/product/A9MEM1573/energy-sensor-powertag-flex-63a-3p-top-and-bottom-position/)
 * [A9MEM1574: PowerTag Flex 127/220V 63A 3P+N top and bottom position](https://www.se.com/ww/en/product/A9MEM1574/energy-sensor-powertag-flex-127-220v-63a-3p+n-top-and-bottom-position/)
 
+#### Possible integrations
+
 > **Warning**
 >
-> Any PowerTags, HeatTags or control modules not mentioned here, although compatible with the gateway, are not supported by this integration.
-> If integration is needed, please [create an issue](https://github.com/Breina/PowerTagGateway/issues) requesting it as an additional feature.
+> The following PowerTags are not yet supported, but are compatible with the Link Gateway.
+> If integration is desired, please [create an issue](https://github.com/Breina/PowerTagGateway/issues) requesting it as an additional feature.
+> 
+> As it is not practical to integrate a device one doesn't have, consider sending the PowerTag to a maintainer of this project.
+
+* A9MEM1580
+* A9MEM1590, A9MEM1591, A9MEM1592, A9MEM1593
+* LV434020, LV434021, LV434022, LV434023
+* A9XMC1D3, A9XMC2D3
+* SMT10020
+* A9XMWRD
 
 
 # Installation

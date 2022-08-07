@@ -44,7 +44,7 @@ class DiscoveredDevice:
         self.host = urlparse(self.presentation_url).hostname
 
         try:
-            SchneiderModbus(self.host, DEFAULT_MODBUS_PORT, timeout=1).name()
+            SchneiderModbus(self.host, DEFAULT_MODBUS_PORT, timeout=1)
             self.port = DEFAULT_MODBUS_PORT
         except ConnectionException:
             self.port = None

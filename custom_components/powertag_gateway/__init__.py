@@ -29,5 +29,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         CONF_INTERNAL_URL: presentation_url
     }
 
-    hass.config_entries.async_setup_platforms(entry, PLATFORMS)
+    for platform in PLATFORMS:
+        hass.async_create_task(
+            hass.config_entries.async_forward_entry_setup(
+                entry, platform
+            )
+        )
+
     return True

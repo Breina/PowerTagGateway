@@ -2,17 +2,13 @@ import enum
 import math
 from datetime import datetime
 
-from pymodbus.client.sync import ModbusTcpClient as ModbusClient
+from pymodbus.client import ModbusTcpClient
 from pymodbus.constants import Endian
 from pymodbus.payload import BinaryPayloadDecoder, BinaryPayloadBuilder
 from pymodbus.pdu import ExceptionResponse
 
 POWERTAG_LINK_SLAVE_ID = 255
 SYNTHESIS_TABLE_SLAVE_ID_START = 247
-
-decoder = lambda registers: BinaryPayloadDecoder.fromRegisters(
-    registers, byteorder=Endian.Big, wordorder=Endian.Big
-)
 
 
 class Phase(enum.Enum):
@@ -135,7 +131,7 @@ class ProductType(enum.Enum):
 
 class SchneiderModbus:
     def __init__(self, host, port=502, timeout=5):
-        self.client = ModbusClient(host, port, timeout=timeout)
+        self.client = ModbusTcpClient(host, port, timeout=timeout)
         self.client.connect()
         self.synthetic_slave_id = self.find_synthentic_table_slave_id()
 
@@ -456,14 +452,20 @@ class SchneiderModbus:
         print(response)
 
     def __read(self, address: int, count: int, unit: int):
-        response = self.client.read_holding_registers(address, count, unit=unit)
+        response = self.client.read_holding_registers(address, count, slave=unit)
         if isinstance(response, ExceptionResponse):
             raise ConnectionError(str(response))
         return response.registers
 
+    @staticmethod
+    def decoder(registers):
+        return BinaryPayloadDecoder.fromRegisters(
+            registers, byteorder=Endian.Big, wordorder=Endian.Big
+        )
+
     def __read_string(self, address: int, count: int, unit: int, string_length: int) -> str | None:
         registers = self.__read(address, count, unit)
-        ascii_bytes = decoder(registers).decode_string(string_length)
+        ascii_bytes = self.decoder(registers).decode_string(string_length)
 
         if all(c == '\x00' for c in ascii_bytes):
             return None
@@ -478,12 +480,12 @@ class SchneiderModbus:
 
     def __read_float_32(self, address: int, unit: int) -> float | None:
         assert (1 <= unit <= 247) or (unit == 255)
-        result = decoder(self.__read(address, 2, unit)).decode_32bit_float()
+        result = self.decoder(self.__read(address, 2, unit)).decode_32bit_float()
         return result if not math.isnan(result) else None
 
     def __read_int_16(self, address: int, unit: int) -> int | None:
         assert (1 <= unit <= 247) or (unit == 255)
-        result = decoder(self.__read(address, 1, unit)).decode_16bit_uint()
+        result = self.decoder(self.__read(address, 1, unit)).decode_16bit_uint()
         return result if result != 0xFFFF else None
 
     def __write_int_16(self, address: int, unit: int, value: int):
@@ -494,16 +496,16 @@ class SchneiderModbus:
 
     def __read_int_32(self, address: int, unit: int) -> int | None:
         assert (1 <= unit <= 247) or (unit == 255)
-        result = decoder(self.__read(address, 2, unit)).decode_32bit_uint()
+        result = self.decoder(self.__read(address, 2, unit)).decode_32bit_uint()
         return result if result != 0x8000_0000 else None
 
     def __read_int_64(self, address: int, unit: int) -> int | None:
         assert (1 <= unit <= 247) or (unit == 255)
-        result = decoder(self.__read(address, 4, unit)).decode_64bit_uint()
+        result = self.decoder(self.__read(address, 4, unit)).decode_64bit_uint()
         return result if result != 0x8000_0000_0000_0000 else None
 
     def __read_date_time(self, address: int, unit) -> datetime | None:
-        d = decoder(self.__read(address, 4, unit))
+        d = self.decoder(self.__read(address, 4, unit))
 
         year_raw = d.decode_16bit_uint()
         year = (year_raw & 0b0111_1111) + 2000

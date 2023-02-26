@@ -90,7 +90,7 @@ To make your life easier later, it's also recommended to enable the _DISCOVERY_ 
 
 1. Open HACS
 2. _+ EXPLORE & DOWNLOAD REPOSITORIES_
-3. Find _NAD Multi-room Audio Controller_ in this list
+3. Find _EcoStruxure PowerTag Link Gateway_ in this list
 4. _DOWNLOAD THIS REPOSITORY WITH HACS_
 5. _DOWNLOAD_
 6. Restart Home Assistant (_Settings_ > _System_ > _RESTART_)

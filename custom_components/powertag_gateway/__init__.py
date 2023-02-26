@@ -12,7 +12,7 @@ PLATFORMS = [Platform.BINARY_SENSOR, Platform.BUTTON, Platform.SENSOR]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up NAD multi-room audio controller from a config entry."""
+    """Set up EcoStruxure PowerTag Link Gateway from a config entry."""
     hass.data.setdefault(DOMAIN, {})
 
     host = entry.data.get(CONF_HOST)

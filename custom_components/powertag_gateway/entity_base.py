@@ -55,11 +55,17 @@ class FeatureClass(Enum):
     F1 = [ProductType.A9MEM1560, ProductType.A9MEM1570]
     F2 = [ProductType.A9MEM1573]
     F3 = [ProductType.A9MEM1564, ProductType.A9MEM1574]
+    FL = [ProductType.A9MEM1580]
+    MV = [ProductType.LV434020]
+    M1 = [ProductType.LV434021]
+    M2 = [ProductType.LV434022]
+    M3 = [ProductType.LV434023]
+    R1 = [ProductType.A9MEM1590, ProductType.A9MEM1591, ProductType.A9MEM1592, ProductType.A9MEM1593]
 
 
 def has_neutral(product_type: ProductType) -> bool:
     feature_class = [fc for fc in FeatureClass if product_type in fc.value][0]
-    return feature_class not in [FeatureClass.A2, FeatureClass.F2]
+    return feature_class not in [FeatureClass.A2, FeatureClass.F2, FeatureClass.M2]
 
 
 def phase_sequence_to_line_voltages(phase_sequence: PhaseSequence, neutral: bool) -> [LineVoltage]:

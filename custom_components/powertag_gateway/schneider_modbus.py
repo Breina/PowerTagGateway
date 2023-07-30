@@ -75,6 +75,7 @@ class DeviceUsage(enum.Enum):
     water = 19
     other_sockets = 20
     other = 21
+    INVALID = None
 
 
 class PhaseSequence(enum.Enum):
@@ -87,6 +88,7 @@ class PhaseSequence(enum.Enum):
     BAC = 7
     CAB = 8
     CBA = 9
+    INVALID = None
 
 
 class Position(enum.Enum):
@@ -94,6 +96,7 @@ class Position(enum.Enum):
     top = 1
     bottom = 2
     not_applicable = 3
+    INVALID = None
 
 
 class ProductType(enum.Enum):

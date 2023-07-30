@@ -1,4 +1,6 @@
 """Platform for Schneider Energy."""
+import logging
+
 from homeassistant.components.sensor import SensorEntity, SensorDeviceClass, SensorStateClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_INTERNAL_URL
@@ -9,9 +11,11 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .const import CONF_CLIENT, DOMAIN
 from .entity_base import gateway_device_info, tag_device_info, has_neutral, \
     phase_sequence_to_phases, phase_sequence_to_line_voltages, GatewayEntity, PowerTagEntity
-from .schneider_modbus import SchneiderModbus, Phase, LineVoltage
+from .schneider_modbus import SchneiderModbus, Phase, LineVoltage, PhaseSequence
 
 PLATFORMS: list[str] = ["sensor"]
+
+log = logging.getLogger(__name__)
 
 
 async def async_setup_entry(
@@ -56,6 +60,10 @@ async def async_setup_entry(
 
         phase_sequence = client.tag_phase_sequence(modbus_address)
         neutral = has_neutral(client.tag_product_type(modbus_address))
+
+        if phase_sequence == PhaseSequence.INVALID:
+            log.warning(f"The phase sequence of {tag_device['name']} was not defined."
+                        f"Skipping adding phase-specific entities...")
 
         for phase in phase_sequence_to_phases(phase_sequence):
             entities.append(PowerTagCurrent(client, modbus_address, tag_device, phase))

@@ -42,7 +42,8 @@ def phase_sequence_to_phases(phase_sequence: PhaseSequence) -> [Phase]:
         PhaseSequence.BAC: [Phase.B, Phase.A, Phase.C],
         PhaseSequence.BCA: [Phase.B, Phase.C, Phase.A],
         PhaseSequence.CAB: [Phase.C, Phase.A, Phase.B],
-        PhaseSequence.CBA: [Phase.C, Phase.B, Phase.A]
+        PhaseSequence.CBA: [Phase.C, Phase.B, Phase.A],
+        PhaseSequence.INVALID: []
     }[phase_sequence]
 
 
@@ -69,7 +70,9 @@ def has_neutral(product_type: ProductType) -> bool:
 
 
 def phase_sequence_to_line_voltages(phase_sequence: PhaseSequence, neutral: bool) -> [LineVoltage]:
-    if phase_sequence in [PhaseSequence.A, PhaseSequence.B, PhaseSequence.C]:
+    if phase_sequence is PhaseSequence.INVALID:
+        return []
+    elif phase_sequence in [PhaseSequence.A, PhaseSequence.B, PhaseSequence.C]:
         if not neutral:
             return []
         return {

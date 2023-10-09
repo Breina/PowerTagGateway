@@ -69,6 +69,16 @@ def has_neutral(product_type: ProductType) -> bool:
     return feature_class not in [FeatureClass.A2, FeatureClass.F2, FeatureClass.M2]
 
 
+def is_m(product_type: ProductType) -> bool:
+    feature_class = [fc for fc in FeatureClass if product_type in fc.value][0]
+    return feature_class in [FeatureClass.M1, FeatureClass.M2, FeatureClass.M3, FeatureClass.MV]
+
+
+def is_r(product_type: ProductType) -> bool:
+    feature_class = [fc for fc in FeatureClass if product_type in fc.value][0]
+    return feature_class in [FeatureClass.FL, FeatureClass.R1]
+
+
 def phase_sequence_to_line_voltages(phase_sequence: PhaseSequence, neutral: bool) -> [LineVoltage]:
     if phase_sequence is PhaseSequence.INVALID:
         return []

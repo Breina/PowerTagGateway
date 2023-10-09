@@ -132,6 +132,19 @@ class ProductType(enum.Enum):
     SMT10020 = (171, "HeatTag sensor")
 
 
+class PowerFactorSignConvention(enum.Enum):
+    IEC = 0
+    IEEE = 1
+    INVALID = None
+
+
+class ElectricalNetworkSystemType(enum.Enum):
+    UNKNOWN = (0, "Unknown system type")
+    PH3W = (3, "3PH3W")
+    PH4W = (11, "3PH4W")
+    INVALID = (None, "Invalid")
+
+
 class SchneiderModbus:
     def __init__(self, host, port=502, timeout=5):
         self.client = ModbusTcpClient(host, port, timeout=timeout)
@@ -195,6 +208,10 @@ class SchneiderModbus:
         """RMS current on phase"""
         return self.__read_float_32(0xBB7 + phase.value, power_tag_index)
 
+    def tag_current_neutral(self, power_tag_index: int) -> float | None:
+        """RMS current on Neutral"""
+        return self.__read_float_32(0xBBD, power_tag_index)
+
     # Voltage Metering Data
 
     def tag_voltage(self, power_tag_index: int, line_voltage: LineVoltage) -> float | None:
@@ -211,25 +228,163 @@ class SchneiderModbus:
         """Total active power"""
         return self.__read_float_32(0xBF3, power_tag_index)
 
+    def tag_power_reactive(self, power_tag_index: int, phase: Phase) -> float | None:
+        """Reactive power on phase"""
+        return self.__read_float_32(0xBF5 + phase.value, power_tag_index)
+
+    def tag_power_reactive_total(self, power_tag_index: int) -> float | None:
+        """Total reactive power"""
+        return self.__read_float_32(0xBFB, power_tag_index)
+
+    def tag_power_apparent(self, power_tag_index: int, phase: Phase) -> float | None:
+        """Apparent power on phase"""
+        return self.__read_float_32(0xBFD + phase.value, power_tag_index)
+
     def tag_power_apparent_total(self, power_tag_index: int) -> float | None:
         """Total apparent power (arithmetric)"""
         return self.__read_float_32(0xC03, power_tag_index)
 
     # Power Factor Metering Data
 
+    def tag_power_factor(self, power_tag_index: int, phase: Phase) -> float | None:
+        """Power factor on phase"""
+        return self.__read_float_32(0xC05 + phase.value, power_tag_index)
+
     def tag_power_factor_total(self, power_tag_index: int) -> float | None:
         """Total power factor"""
         return self.__read_float_32(0xC0B, power_tag_index)
 
+    def tag_power_factor_sign_convention(self, power_tag_index: int) -> PowerFactorSignConvention:
+        """Power factor sign convention"""
+        return PowerFactorSignConvention(self.__read_int_16(0xC0D, power_tag_index))
+
+    # Frequency Metering Data
+
+    def tag_ac_frequency(self, power_tag_index: int) -> float | None:
+        """AC frequency"""
+        return self.__read_float_32(0xC25, power_tag_index)
+
+    # Device Temperature Metering Data
+
+    def tag_device_temperature(self, power_tag_index: int) -> float | None:
+        """Device internal temperature"""
+        return self.__read_float_32(0xC3B, power_tag_index)
+
     # Energy Data – Legacy Zone
 
-    def tag_energy_active_total(self, power_tag_index: int) -> int | None:
+    def tag_energy_active_delivered_plus_received_total(self, power_tag_index: int) -> int | None:
         """Total active energy delivered + received (not resettable)"""
         return self.__read_int_64(0xC83, power_tag_index)
 
-    def tag_energy_active_partial(self, power_tag_index: int) -> int | None:
+    def tag_energy_active_delta(self, power_tag_index: int, phase: Phase) -> int | None:
+        """Active energy on phase delivered - received (not resettable)"""
+        return self.__read_int_64(0xC8F + phase.value * 2, power_tag_index)
+
+    def tag_energy_active_delivered_plus_received_partial(self, power_tag_index: int) -> int | None:
         """Partial active energy delivered + received (resettable)"""
-        return self.__read_int_64(0xC83, power_tag_index)
+        return self.__read_int_64(0xCB7, power_tag_index)
+
+    def tag_reset_energy_active_partial(self, power_tag_index: int):
+        """Set partial active energy counter. The value returns to zero by PowerTag Link gateway"""
+        self.__write_int_64(0xCBB, power_tag_index, 0)
+
+    def tag_reset_energy_active_delivered_partial(self, power_tag_index: int):
+        """Set partial active energy delivered counter. The value returns to zero by PowerTag Link gateway"""
+        self.__write_int_64(0xCC3, power_tag_index, 0)
+
+    def tag_reset_energy_active_received_partial(self, power_tag_index: int):
+        """Set partial active energy received counter. The value returns to zero by PowerTag Link gateway."""
+        self.__write_int_64(0xCCB, power_tag_index, 0)
+
+    def tag_reset_energy_reactive_delivered_partial(self, power_tag_index: int):
+        """Set partial reactive energy delivered counter. The value returns to zero by PowerTag Link gateway."""
+        self.__write_int_64(0xCD3, power_tag_index, 0)
+
+    def tag_reset_energy_reactive_received_partial(self, power_tag_index: int):
+        """Set partial reactive energy received counter. The value returns to zero by PowerTag Link gateway."""
+        self.__write_int_64(0xCDB, power_tag_index, 0)
+
+    # Energy Data – New Zone
+
+    def tag_energy_active_delivered_partial(self, power_tag_index: int) -> int | None:
+        """Active energy delivered (resettable)"""
+        return self.__read_int_64(0x1390, power_tag_index)
+
+    def tag_energy_active_delivered_total(self, power_tag_index: int) -> int | None:
+        """Active energy delivered count positively (not resettable)"""
+        return self.__read_int_64(0x1394, power_tag_index)
+
+    def tag_energy_active_received_partial(self, power_tag_index: int) -> int | None:
+        """Active energy received (resettable)"""
+        return self.__read_int_64(0x1398, power_tag_index)
+
+    def tag_energy_active_received_total(self, power_tag_index: int) -> int | None:
+        """Active energy received count negatively (not resettable)"""
+        return self.__read_int_64(0x139C, power_tag_index)
+
+    def tag_energy_active_delivered_partial_phase(self, power_tag_index: int, phase: Phase) -> int | None:
+        """Active energy on phase delivered (resettable)"""
+        return self.__read_int_64(0x13B8 + phase.value * 0x14, power_tag_index)
+
+    def tag_energy_active_delivered_total_phase(self, power_tag_index: int, phase: Phase) -> int | None:
+        """Active energy on phase delivered (not resettable)"""
+        return self.__read_int_64(0x13BC + phase.value * 0x14, power_tag_index)
+
+    def tag_energy_active_received_partial_phase(self, power_tag_index: int, phase: Phase) -> int | None:
+        """Active energy on phase received (resettable)"""
+        return self.__read_int_64(0x13C0 + phase.value * 0x14, power_tag_index)
+
+    def tag_energy_active_received_total_phase(self, power_tag_index: int, phase: Phase) -> int | None:
+        """Active energy on phase received (not resettable)"""
+        return self.__read_int_64(0x13C4 + phase.value * 0x14, power_tag_index)
+
+    def tag_energy_reactive_delivered_partial(self, power_tag_index: int) -> int | None:
+        """Reactive energy delivered (resettable)"""
+        return self.__read_int_64(0x1438, power_tag_index)
+
+    def tag_energy_reactive_delivered_total(self, power_tag_index: int) -> int | None:
+        """Reactive energy delivered count positively (not resettable)"""
+        return self.__read_int_64(0x143C, power_tag_index)
+
+    def tag_energy_reactive_received_partial(self, power_tag_index: int) -> int | None:
+        """Reactive energy received (resettable)"""
+        return self.__read_int_64(0x1488, power_tag_index)
+
+    def tag_energy_reactive_received_total(self, power_tag_index: int) -> int | None:
+        """Reactive energy received count negatively (not resettable)"""
+        return self.__read_int_64(0x144C, power_tag_index)
+
+    def tag_energy_reactive_delivered_partial_phase(self, power_tag_index: int, phase: Phase) -> int | None:
+        """Reactive energy on phase delivered (resettable)"""
+        return self.__read_int_64(0x1470 + phase.value * 0x14, power_tag_index)
+
+    def tag_energy_reactive_delivered_total_phase(self, power_tag_index: int, phase: Phase) -> int | None:
+        """Reactive energy on phase delivered (not resettable)"""
+        return self.__read_int_64(0x1474 + phase.value * 0x14, power_tag_index)
+
+    def tag_energy_reactive_received_partial_phase(self, power_tag_index: int, phase: Phase) -> int | None:
+        """Reactive energy on phase received (resettable)"""
+        return self.__read_int_64(0x1478 + phase.value * 0x14, power_tag_index)
+
+    def tag_energy_reactive_received_total_phase(self, power_tag_index: int, phase: Phase) -> int | None:
+        """Reactive energy on phase received (not resettable)"""
+        return self.__read_int_64(0x147C + phase.value * 0x14, power_tag_index)
+
+    def tag_energy_apparent_partial(self, power_tag_index: int) -> int | None:
+        """Apparent energy delivered + received (resettable)"""
+        return self.__read_int_64(0x14F4, power_tag_index)
+
+    def tag_energy_apparent_total(self, power_tag_index: int) -> int | None:
+        """Apparent energy delivered + received (not resettable)"""
+        return self.__read_int_64(0x14F8, power_tag_index)
+
+    def tag_energy_apparent_partial_phase(self, power_tag_index: int, phase: Phase) -> int | None:
+        """Apparent energy on phase (resettable)"""
+        return self.__read_int_64(0x150C + phase.value * 0x14, power_tag_index)
+
+    def tag_energy_apparent_total_phase(self, power_tag_index: int, phase: Phase) -> int | None:
+        """Apparent energy on phase A (not resettable)"""
+        return self.__read_int_64(0x1510 + phase.value * 0x14, power_tag_index)
 
     # Power Demand Data
 
@@ -302,6 +457,11 @@ class SchneiderModbus:
     def tag_rated_current(self, power_tag_index: int) -> int | None:
         """Rated current of the protective device to the wireless device"""
         return self.__read_int_16(0x7929, power_tag_index)
+
+    def tag_electrical_network_system_type(self, power_tag_index: int) -> ElectricalNetworkSystemType:
+        code = self.__read_int_16(0x792A, power_tag_index)
+        system_type = [e for e in ElectricalNetworkSystemType if e.value[0] == code]
+        return system_type[0] if system_type else None
 
     def tag_rated_voltage(self, power_tag_index: int) -> float | None:
         """Rated voltage"""
@@ -506,6 +666,12 @@ class SchneiderModbus:
         assert (1 <= unit <= 247) or (unit == 255)
         result = self.decoder(self.__read(address, 4, unit)).decode_64bit_uint()
         return result if result != 0x8000_0000_0000_0000 else None
+
+    def __write_int_64(self, address: int, unit: int, value: int):
+        assert (1 <= unit <= 247) or (unit == 255)
+        builder = BinaryPayloadBuilder(byteorder=Endian.Big, wordorder=Endian.Big)
+        builder.add_64bit_uint(value)
+        self.__write(address, builder.to_registers(), unit)
 
     def __read_date_time(self, address: int, unit) -> datetime | None:
         d = self.decoder(self.__read(address, 4, unit))

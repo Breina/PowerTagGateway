@@ -6,7 +6,7 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import CONF_CLIENT, DOMAIN
-from .entity_base import PowerTagEntity, gateway_device_info, tag_device_info
+from .entity_base import PowerTagEntity, gateway_device_info, tag_device_info, is_r
 from .schneider_modbus import SchneiderModbus
 
 
@@ -35,6 +35,18 @@ async def async_setup_entry(
 
         entities.append(PowerTagResetPeakDemand(client, modbus_address, tag_device))
 
+        product_type = client.tag_product_type(modbus_address)
+        class_r = is_r(product_type)
+
+        if class_r:
+            entities.extend([
+                PowerTagResetActiveEnergy(client, modbus_address, tag_device),
+                PowerTagResetActiveEnergyDelivered(client, modbus_address, tag_device),
+                PowerTagResetActiveEnergyReceived(client, modbus_address, tag_device),
+                PowerTagResetReactiveEnergyDelivered(client, modbus_address, tag_device),
+                PowerTagResetReactiveEnergyReceived(client, modbus_address, tag_device),
+            ])
+
     async_add_entities(entities, update_before_add=False)
 
 
@@ -50,3 +62,75 @@ class PowerTagResetPeakDemand(PowerTagEntity, ButtonEntity):
 
     def reset(self):
         self._client.tag_reset_peak_demands(self._modbus_index)
+
+
+class PowerTagResetActiveEnergy(PowerTagEntity, ButtonEntity):
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
+        super().__init__(client, modbus_index, tag_device, "reset active energy")
+
+    def press(self) -> None:
+        self.reset()
+
+    async def async_press(self) -> None:
+        self.reset()
+
+    def reset(self):
+        self._client.tag_reset_energy_active_partial(self._modbus_index)
+
+
+class PowerTagResetActiveEnergyDelivered(PowerTagEntity, ButtonEntity):
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
+        super().__init__(client, modbus_index, tag_device, "reset active energy delivered")
+
+    def press(self) -> None:
+        self.reset()
+
+    async def async_press(self) -> None:
+        self.reset()
+
+    def reset(self):
+        self._client.tag_reset_energy_active_delivered_partial(self._modbus_index)
+
+
+class PowerTagResetActiveEnergyReceived(PowerTagEntity, ButtonEntity):
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
+        super().__init__(client, modbus_index, tag_device, "reset active energy received")
+
+    def press(self) -> None:
+        self.reset()
+
+    async def async_press(self) -> None:
+        self.reset()
+
+    def reset(self):
+        self._client.tag_reset_energy_active_received_partial(self._modbus_index)
+
+
+class PowerTagResetReactiveEnergyDelivered(PowerTagEntity, ButtonEntity):
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
+        super().__init__(client, modbus_index, tag_device, "reset reactive energy delivered")
+
+    def press(self) -> None:
+        self.reset()
+
+    async def async_press(self) -> None:
+        self.reset()
+
+    def reset(self):
+        self._client.tag_reset_energy_reactive_delivered_partial(self._modbus_index)
+
+
+class PowerTagResetReactiveEnergyReceived(PowerTagEntity, ButtonEntity):
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
+        super().__init__(client, modbus_index, tag_device, "reset reactive energy received")
+
+    def press(self) -> None:
+        self.reset()
+
+    async def async_press(self) -> None:
+        self.reset()
+
+    def reset(self):
+        self._client.tag_reset_energy_reactive_received_partial(self._modbus_index)
+
+

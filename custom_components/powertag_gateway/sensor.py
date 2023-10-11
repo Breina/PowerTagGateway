@@ -62,7 +62,7 @@ async def async_setup_entry(
         class_m = is_m(product_type)
         class_r = is_r(product_type)
 
-        if class_m or class_m:
+        if class_m or class_r:
             entities.extend([
                 PowerTagReactivePower(client, modbus_address, tag_device),
                 PowerTagFrequency(client, modbus_address, tag_device),

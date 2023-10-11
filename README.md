@@ -66,6 +66,7 @@ This will enable monitor electric circuits in great detail.
 * A9XMC1D3, A9XMC2D3
 * A9XMWRD
 * SMT10020
+* PAS600
 
 
 # Installation

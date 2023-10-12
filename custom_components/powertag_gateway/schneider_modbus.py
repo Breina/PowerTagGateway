@@ -1,4 +1,5 @@
 import enum
+import logging
 import math
 from datetime import datetime
 
@@ -9,6 +10,8 @@ from pymodbus.pdu import ExceptionResponse
 
 POWERTAG_LINK_SLAVE_ID = 255
 SYNTHESIS_TABLE_SLAVE_ID_START = 247
+
+log = logging.getLogger(__name__)
 
 
 class Phase(enum.Enum):
@@ -147,6 +150,7 @@ class ElectricalNetworkSystemType(enum.Enum):
 
 class SchneiderModbus:
     def __init__(self, host, port=502, timeout=5):
+        log.info(f"Connecting Modbus TCP to {host}:{port}")
         self.client = ModbusTcpClient(host, port, timeout=timeout)
         self.client.connect()
         self.synthetic_slave_id = self.find_synthentic_table_slave_id()
@@ -286,23 +290,23 @@ class SchneiderModbus:
 
     def tag_reset_energy_active_partial(self, power_tag_index: int):
         """Set partial active energy counter. The value returns to zero by PowerTag Link gateway"""
-        self.__write_int_64(0xCBB, power_tag_index, 0)
+        self.__write_int_64(0xCBB, power_tag_index, 1)
 
     def tag_reset_energy_active_delivered_partial(self, power_tag_index: int):
         """Set partial active energy delivered counter. The value returns to zero by PowerTag Link gateway"""
-        self.__write_int_64(0xCC3, power_tag_index, 0)
+        self.__write_int_64(0xCC3, power_tag_index, 1)
 
     def tag_reset_energy_active_received_partial(self, power_tag_index: int):
         """Set partial active energy received counter. The value returns to zero by PowerTag Link gateway."""
-        self.__write_int_64(0xCCB, power_tag_index, 0)
+        self.__write_int_64(0xCCB, power_tag_index, 1)
 
     def tag_reset_energy_reactive_delivered_partial(self, power_tag_index: int):
         """Set partial reactive energy delivered counter. The value returns to zero by PowerTag Link gateway."""
-        self.__write_int_64(0xCD3, power_tag_index, 0)
+        self.__write_int_64(0xCD3, power_tag_index, 1)
 
     def tag_reset_energy_reactive_received_partial(self, power_tag_index: int):
         """Set partial reactive energy received counter. The value returns to zero by PowerTag Link gateway."""
-        self.__write_int_64(0xCDB, power_tag_index, 0)
+        self.__write_int_64(0xCDB, power_tag_index, 1)
 
     # Energy Data – New Zone
 
@@ -471,7 +475,7 @@ class SchneiderModbus:
         """Reset All Peak Demands"""
         self.__write_int_16(0x792E, power_tag_index, 1)
 
-    def tag_power_supply_type(self, power_tag_index: int):
+    def tag_power_supply_type(self, power_tag_index: int) -> Position:
         """Power supply type"""
         return Position(self.__read_int_16(0x792F, power_tag_index))
 
@@ -610,12 +614,11 @@ class SchneiderModbus:
 
     # Helper functions
 
-    def __write(self, address: int, registers, unit: int):
-        response = self.client.write_registers(address, registers, unit=unit)
-        print(response)
+    def __write(self, address: int, registers: list[int], slave_id: int):
+        response = self.client.write_registers(address, registers, slave=slave_id)
 
-    def __read(self, address: int, count: int, unit: int):
-        response = self.client.read_holding_registers(address, count, slave=unit)
+    def __read(self, address: int, count: int, slave_id: int):
+        response = self.client.read_holding_registers(address, count, slave=slave_id)
         if isinstance(response, ExceptionResponse):
             raise ConnectionError(str(response))
         return response.registers
@@ -626,8 +629,8 @@ class SchneiderModbus:
             registers, byteorder=Endian.Big, wordorder=Endian.Big
         )
 
-    def __read_string(self, address: int, count: int, unit: int, string_length: int) -> str | None:
-        registers = self.__read(address, count, unit)
+    def __read_string(self, address: int, count: int, slave_id: int, string_length: int) -> str | None:
+        registers = self.__read(address, count, slave_id)
         ascii_bytes = self.decoder(registers).decode_string(string_length)
 
         if all(c == '\x00' for c in ascii_bytes):
@@ -636,45 +639,45 @@ class SchneiderModbus:
         filtered_ascii_bytes = bytes(filter(lambda b: b != 0, list(ascii_bytes)))
         return bytes.decode(filtered_ascii_bytes)
 
-    def __write_string(self, address: int, unit: int, string: str):
+    def __write_string(self, address: int, slave_id: int, string: str):
         builder = BinaryPayloadBuilder(byteorder=Endian.Big, wordorder=Endian.Big)
         builder.add_string(string.ljust(20, '\x00'))
-        self.__write(address, builder.to_registers(), unit)
+        self.__write(address, builder.to_registers(), slave_id)
 
-    def __read_float_32(self, address: int, unit: int) -> float | None:
-        assert (1 <= unit <= 247) or (unit == 255)
-        result = self.decoder(self.__read(address, 2, unit)).decode_32bit_float()
+    def __read_float_32(self, address: int, slave_id: int) -> float | None:
+        assert (1 <= slave_id <= 247) or (slave_id == 255)
+        result = self.decoder(self.__read(address, 2, slave_id)).decode_32bit_float()
         return result if not math.isnan(result) else None
 
-    def __read_int_16(self, address: int, unit: int) -> int | None:
-        assert (1 <= unit <= 247) or (unit == 255)
-        result = self.decoder(self.__read(address, 1, unit)).decode_16bit_uint()
+    def __read_int_16(self, address: int, slave_id: int) -> int | None:
+        assert (1 <= slave_id <= 247) or (slave_id == 255)
+        result = self.decoder(self.__read(address, 1, slave_id)).decode_16bit_uint()
         return result if result != 0xFFFF else None
 
-    def __write_int_16(self, address: int, unit: int, value: int):
-        assert (1 <= unit <= 247) or (unit == 255)
+    def __write_int_16(self, address: int, slave_id: int, value: int):
+        assert (1 <= slave_id <= 247) or (slave_id == 255)
         builder = BinaryPayloadBuilder(byteorder=Endian.Big, wordorder=Endian.Big)
         builder.add_16bit_uint(value)
-        self.__write(address, builder.to_registers(), unit)
+        self.__write(address, builder.to_registers(), slave_id)
 
-    def __read_int_32(self, address: int, unit: int) -> int | None:
-        assert (1 <= unit <= 247) or (unit == 255)
-        result = self.decoder(self.__read(address, 2, unit)).decode_32bit_uint()
+    def __read_int_32(self, address: int, slave_id: int) -> int | None:
+        assert (1 <= slave_id <= 247) or (slave_id == 255)
+        result = self.decoder(self.__read(address, 2, slave_id)).decode_32bit_uint()
         return result if result != 0x8000_0000 else None
 
-    def __read_int_64(self, address: int, unit: int) -> int | None:
-        assert (1 <= unit <= 247) or (unit == 255)
-        result = self.decoder(self.__read(address, 4, unit)).decode_64bit_uint()
+    def __read_int_64(self, address: int, slave_id: int) -> int | None:
+        assert (1 <= slave_id <= 247) or (slave_id == 255)
+        result = self.decoder(self.__read(address, 4, slave_id)).decode_64bit_uint()
         return result if result != 0x8000_0000_0000_0000 else None
 
-    def __write_int_64(self, address: int, unit: int, value: int):
-        assert (1 <= unit <= 247) or (unit == 255)
+    def __write_int_64(self, address: int, slave_id: int, value: int):
+        assert (1 <= slave_id <= 247) or (slave_id == 255)
         builder = BinaryPayloadBuilder(byteorder=Endian.Big, wordorder=Endian.Big)
         builder.add_64bit_uint(value)
-        self.__write(address, builder.to_registers(), unit)
+        self.__write(address, builder.to_registers(), slave_id)
 
-    def __read_date_time(self, address: int, unit) -> datetime | None:
-        d = self.decoder(self.__read(address, 4, unit))
+    def __read_date_time(self, address: int, slave_id) -> datetime | None:
+        d = self.decoder(self.__read(address, 4, slave_id))
 
         year_raw = d.decode_16bit_uint()
         year = (year_raw & 0b0111_1111) + 2000

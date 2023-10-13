@@ -615,7 +615,7 @@ class SchneiderModbus:
     # Helper functions
 
     def __write(self, address: int, registers: list[int], slave_id: int):
-        response = self.client.write_registers(address, registers, slave=slave_id)
+        self.client.write_registers(address, registers, slave=slave_id)
 
     def __read(self, address: int, count: int, slave_id: int):
         response = self.client.read_holding_registers(address, count, slave=slave_id)
@@ -626,7 +626,7 @@ class SchneiderModbus:
     @staticmethod
     def decoder(registers):
         return BinaryPayloadDecoder.fromRegisters(
-            registers, byteorder=Endian.Big, wordorder=Endian.Big
+            registers, byteorder=Endian.BIG, wordorder=Endian.BIG
         )
 
     def __read_string(self, address: int, count: int, slave_id: int, string_length: int) -> str | None:
@@ -640,7 +640,7 @@ class SchneiderModbus:
         return bytes.decode(filtered_ascii_bytes)
 
     def __write_string(self, address: int, slave_id: int, string: str):
-        builder = BinaryPayloadBuilder(byteorder=Endian.Big, wordorder=Endian.Big)
+        builder = BinaryPayloadBuilder(byteorder=Endian.BIG, wordorder=Endian.BIG)
         builder.add_string(string.ljust(20, '\x00'))
         self.__write(address, builder.to_registers(), slave_id)
 
@@ -656,7 +656,7 @@ class SchneiderModbus:
 
     def __write_int_16(self, address: int, slave_id: int, value: int):
         assert (1 <= slave_id <= 247) or (slave_id == 255)
-        builder = BinaryPayloadBuilder(byteorder=Endian.Big, wordorder=Endian.Big)
+        builder = BinaryPayloadBuilder(byteorder=Endian.BIG, wordorder=Endian.BIG)
         builder.add_16bit_uint(value)
         self.__write(address, builder.to_registers(), slave_id)
 
@@ -672,7 +672,7 @@ class SchneiderModbus:
 
     def __write_int_64(self, address: int, slave_id: int, value: int):
         assert (1 <= slave_id <= 247) or (slave_id == 255)
-        builder = BinaryPayloadBuilder(byteorder=Endian.Big, wordorder=Endian.Big)
+        builder = BinaryPayloadBuilder(byteorder=Endian.BIG, wordorder=Endian.BIG)
         builder.add_64bit_uint(value)
         self.__write(address, builder.to_registers(), slave_id)
 

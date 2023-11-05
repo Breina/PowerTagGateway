@@ -18,7 +18,8 @@
         "description": "Configure the some network parameters",
         "data": {
           "host": "[%key:common::config_flow::data::host%]",
-          "port": "[%key:common::config_flow::data::port%]"
+          "port": "[%key:common::config_flow::data::port%]",
+          "type_of_gateway": "Type of gateway"
         }
       }
     },

@@ -64,6 +64,10 @@ class FeatureClass(Enum):
     R1 = [ProductType.A9MEM1590, ProductType.A9MEM1591, ProductType.A9MEM1592, ProductType.A9MEM1593]
 
 
+def is_powertag(product_type: ProductType):
+    return product_type not in [ProductType.SMT10020, ProductType.A9XMWRD, ProductType.A9XMC2D3, ProductType.A9XMC1D3]
+
+
 def has_neutral(product_type: ProductType) -> bool:
     feature_class = [fc for fc in FeatureClass if product_type in fc.value][0]
     return feature_class not in [FeatureClass.A2, FeatureClass.F2, FeatureClass.M2]

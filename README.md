@@ -24,6 +24,12 @@ This will enable monitor electric circuits in great detail.
 
 * A9XMWD20: Acti9 PowerTag Link
 * A9XMWD100: Acti9 PowerTag Link HD
+* PAS400: EcoStruxure Panel Server - entry - 110-277 VAC/DC
+* PAS600: EcoStruxure Panel Server - universal - 110-277 VAC/DC
+* PAS600L: EcoStruxure Panel Server - universal - 24 VDC
+* PAS800: EcoStruxure Panel Server - advanced datalogger - 110-277 VAC/DC
+* PAS800L: EcoStruxure Panel Server - advanced datalogger - 24 VDC
+* PAS800P: EcoStruxure Panel Server - advanced datalogger - PEO
 
 ### PowerTags
 
@@ -78,14 +84,26 @@ It is assumed that you have configured your gateway and all of its powertags.
 A hard requirement for this integration to work is the modbus TCP service to be enabled, which it is by default.
 To check whether this is the case, open the device's configuration webpage through navigating to its IP address in your web browser.
 
-Navigate to _SETTINGS_ > _IP NETWORK SERVICES_
-
-![The IP services configuration](images/Web_config.png)
-
 Check that the _MODBUS TCP_ service is enabled.
 Its port is set to 502 by default, if you diverge from this, **please keep your port number in mind for later**.
 
 To make your life easier later, it's also recommended to enable the _DISCOVERY_ service, its port doesn't matter.
+
+### PowerTag Link
+
+Navigate to _SETTINGS_ > _IP NETWORK SERVICES_
+
+![The IP services configuration](images/Web_config.png)
+
+### Panel Server
+
+Navigate to _Settings_ > _Network communication_ > Services
+
+![The modbus service configuration](images/Web_config_panel_modbus.png)
+
+Navigate to _Settings_ > _Network communication_ > DPWS
+
+![The DPWS service configuration](images/Web_config_panel_dpws.png)
 
 ## Installation
 

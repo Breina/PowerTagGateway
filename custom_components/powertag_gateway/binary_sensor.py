@@ -1,3 +1,5 @@
+import logging
+
 from homeassistant.components.binary_sensor import BinarySensorEntity, BinarySensorDeviceClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_INTERNAL_URL
@@ -6,8 +8,10 @@ from homeassistant.helpers.entity import EntityCategory, DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import CONF_CLIENT, DOMAIN
-from .entity_base import PowerTagEntity, tag_device_info, gateway_device_info, GatewayEntity
-from .schneider_modbus import SchneiderModbus, LinkStatus
+from .entity_base import PowerTagEntity, tag_device_info, gateway_device_info, GatewayEntity, is_powertag
+from .schneider_modbus import SchneiderModbus, LinkStatus, PanelHealth, TypeOfGateway
+
+log = logging.getLogger(__name__)
 
 
 async def async_setup_entry(
@@ -24,12 +28,21 @@ async def async_setup_entry(
 
     gateway_device = gateway_device_info(client, presentation_url)
 
-    entities.append(GatewayStatus(client, gateway_device))
+    if client.type_of_gateway == TypeOfGateway.POWERTAG_LINK:
+        entities.append(GatewayStatus(client, gateway_device))
+    else:
+        entities.append(GatewayHealth(client, gateway_device))
 
     for i in range(1, 100):
         modbus_address = client.modbus_address_of_node(i)
         if modbus_address is None:
             break
+
+        product_type = client.tag_product_type(modbus_address)
+        log.info(f"Setting up {product_type}...")
+        if not is_powertag(product_type):
+            log.warning(f"Product {product_type} is not yet supported by this integration.")
+            continue
 
         tag_device = tag_device_info(
             client, modbus_address, presentation_url, next(iter(gateway_device["identifiers"]))
@@ -125,4 +138,23 @@ class GatewayStatus(GatewayEntity, BinarySensorEntity):
             LinkStatus.FLASH_ERROR: "Flash error",
             LinkStatus.RAM_ERROR: "RAM error",
             LinkStatus.GENERAL_FAILURE: "General failure"
+        }[status]
+
+
+class GatewayHealth(GatewayEntity, BinarySensorEntity):
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_device_class = BinarySensorDeviceClass.PROBLEM
+
+    def __init__(self, client: SchneiderModbus, tag_device: DeviceInfo):
+        super().__init__(client, tag_device, "health")
+        self._attr_extra_state_attributes = {}
+
+    async def async_update(self):
+        status = self._client.health()
+        self._attr_is_on = status != PanelHealth.NOMINAL
+
+        self._attr_extra_state_attributes["status"] = {
+            PanelHealth.NOMINAL: "Nominal",
+            PanelHealth.DEGRADED: "Degraded",
+            PanelHealth.OUT_OF_ORDER: "Out of order"
         }[status]

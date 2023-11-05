@@ -8,7 +8,7 @@ from pymodbus.constants import Endian
 from pymodbus.payload import BinaryPayloadDecoder, BinaryPayloadBuilder
 from pymodbus.pdu import ExceptionResponse
 
-POWERTAG_LINK_SLAVE_ID = 255
+GATEWAY_SLAVE_ID = 255
 SYNTHESIS_TABLE_SLAVE_ID_START = 247
 
 log = logging.getLogger(__name__)
@@ -37,6 +37,12 @@ class LinkStatus(enum.Enum):
     E2PROM_ERROR = 0b0010_0000_0000_1000
     RAM_ERROR = 0b0100_0000_0000_1000
     FLASH_ERROR = 0b1000_0000_0000_1000
+
+
+class PanelHealth(enum.Enum):
+    NOMINAL = 0
+    DEGRADED = 1
+    OUT_OF_ORDER = 2
 
 
 class AlarmStatus:
@@ -103,36 +109,36 @@ class Position(enum.Enum):
 
 
 class ProductType(enum.Enum):
-    A9MEM1520 = (41, "PowerTag M63 1P")
-    A9MEM1521 = (42, "PowerTag M63 1P+N Top")
-    A9MEM1522 = (43, "PowerTag M63 1P+N Bottom")
-    A9MEM1540 = (44, "PowerTag M63 3P")
-    A9MEM1541 = (45, "PowerTag M63 3P+N Top")
-    A9MEM1542 = (46, "PowerTag M63 3P+N Bottom")
-    A9MEM1560 = (81, "PowerTag F63 1P+N")
-    A9MEM1561 = (82, "PowerTag P63 1P+N Top")
-    A9MEM1562 = (83, "PowerTag P63 1P+N Bottom")
-    A9MEM1563 = (84, "PowerTag P63 1P+N Bottom")
-    A9MEM1570 = (85, "PowerTag F63 3P+N")
-    A9MEM1571 = (86, "PowerTag P63 3P+N Top")
-    A9MEM1572 = (87, "PowerTag P63 3P+N Bottom")
-    LV434020 = (92, "PowerTag M250 3P")
-    LV434021 = (93, "PowerTag M250 4P")
-    LV434022 = (94, "PowerTag M630 3P")
-    LV434023 = (95, "PowerTag M630 4P")
-    A9MEM1543 = (96, "PowerTag M63 3P 230 V")
-    A9XMC2D3 = (97, "PowerTag C 2DI 230 V")
-    A9XMC1D3 = (98, "PowerTag C IO 230 V")
-    A9MEM1564 = (101, "PowerTag F63 1P+N 110 V")
-    A9MEM1573 = (102, "PowerTag F63 3P")
-    A9MEM1574 = (103, "PowerTag F63 3P+N 110/230 V")
-    A9MEM1590 = (104, "PowerTag R200")
-    A9MEM1591 = (105, "PowerTag R600")
-    A9MEM1592 = (106, "PowerTag R1000")
-    A9MEM1593 = (107, "PowerTag R2000")
-    A9MEM1580 = (121, "PowerTag F160")
-    A9XMWRD = (170, "PowerTag Link display")
-    SMT10020 = (171, "HeatTag sensor")
+    A9MEM1520 = (41, 17200,  "PowerTag M63 1P")
+    A9MEM1521 = (42, 17201, "PowerTag M63 1P+N Top")
+    A9MEM1522 = (43, 17202, "PowerTag M63 1P+N Bottom")
+    A9MEM1540 = (44, 17203, "PowerTag M63 3P")
+    A9MEM1541 = (45, 17204, "PowerTag M63 3P+N Top")
+    A9MEM1542 = (46, 17205, "PowerTag M63 3P+N Bottom")
+    A9MEM1560 = (81, 17206, "PowerTag F63 1P+N")
+    A9MEM1561 = (82, 17207, "PowerTag P63 1P+N Top")
+    A9MEM1562 = (83, 17208, "PowerTag P63 1P+N Bottom")
+    A9MEM1563 = (84, 17209, "PowerTag P63 1P+N Bottom")
+    A9MEM1570 = (85, 17209, "PowerTag F63 3P+N")
+    A9MEM1571 = (86, 17211, "PowerTag P63 3P+N Top")
+    A9MEM1572 = (87, 17212, "PowerTag P63 3P+N Bottom")
+    LV434020 = (92, 17800, "PowerTag M250 3P")
+    LV434021 = (93, 17801, "PowerTag M250 4P")
+    LV434022 = (94, 17802, "PowerTag M630 3P")
+    LV434023 = (95, 17803, "PowerTag M630 4P")
+    A9MEM1543 = (96, 17213, "PowerTag M63 3P 230 V")
+    A9XMC2D3 = (97, 17900, "PowerTag C 2DI 230 V")
+    A9XMC1D3 = (98, 17901, "PowerTag C IO 230 V")
+    A9MEM1564 = (101, 17215, "PowerTag F63 1P+N 110 V")
+    A9MEM1573 = (102, 17214, "PowerTag F63 3P")
+    A9MEM1574 = (103, 17216, "PowerTag F63 3P+N 110/230 V")
+    A9MEM1590 = (104, 17969, "PowerTag R200")
+    A9MEM1591 = (105, 17970, "PowerTag R600")
+    A9MEM1592 = (106, 17971, "PowerTag R1000")
+    A9MEM1593 = (107, 17972, "PowerTag R2000")
+    A9MEM1580 = (121, 17980, "PowerTag F160")
+    A9XMWRD = (170, 9150, "PowerTag Link display")
+    SMT10020 = (171, 17350, "HeatTag sensor")
 
 
 class PowerFactorSignConvention(enum.Enum):
@@ -148,12 +154,19 @@ class ElectricalNetworkSystemType(enum.Enum):
     INVALID = (None, "Invalid")
 
 
+class TypeOfGateway(enum.Enum):
+    PANEL_SERVER = "Panel server"
+    POWERTAG_LINK = "Powertag Link"
+
+
 class SchneiderModbus:
-    def __init__(self, host, port=502, timeout=5):
+    def __init__(self, host, type_of_gateway: TypeOfGateway, port=502, timeout=5):
         log.info(f"Connecting Modbus TCP to {host}:{port}")
         self.client = ModbusTcpClient(host, port, timeout=timeout)
         self.client.connect()
-        self.synthetic_slave_id = self.find_synthentic_table_slave_id()
+        self.type_of_gateway = type_of_gateway
+        if type_of_gateway is TypeOfGateway.POWERTAG_LINK:
+            self.synthetic_slave_id = self.find_synthentic_table_slave_id()
 
     def find_synthentic_table_slave_id(self):
         for slave_id in range(SYNTHESIS_TABLE_SLAVE_ID_START, 1, -1):
@@ -169,7 +182,7 @@ class SchneiderModbus:
         """Gateway Hardware version
         valid for firmware version 001.008.007 and later.
         """
-        return self.__read_string(0x0050, 6, POWERTAG_LINK_SLAVE_ID, 11)
+        return self.__read_string(0x0050, 6, GATEWAY_SLAVE_ID, 11)
 
     def serial_number(self) -> str:
         """[S/N]: PP YY WW [D [nnnn]]
@@ -179,32 +192,39 @@ class SchneiderModbus:
         • D: Day of the week in decimal notation [1...7]
         • nnnn: Sequence of numbers [0001...10.00-0–1]
         """
-        return self.__read_string(0x0064, 6, POWERTAG_LINK_SLAVE_ID, 11)
+        return self.__read_string(0x0064, 6, GATEWAY_SLAVE_ID, 11)
 
     def hardware_version_legacy(self) -> str:
         """valid up to firmware version 001.008.007"""
-        return self.__read_string(0x006A, 3, POWERTAG_LINK_SLAVE_ID, 6)
+        return self.__read_string(0x006A, 3, GATEWAY_SLAVE_ID, 6)
 
     def firmware_version_legacy(self) -> str:
         """valid up to firmware version 001.008.007"""
-        return self.__read_string(0x006D, 3, POWERTAG_LINK_SLAVE_ID, 6)
+        return self.__read_string(0x006D, 3, GATEWAY_SLAVE_ID, 6)
 
     def firmware_version(self) -> str:
         """valid for firmware version 001.008.007 and later."""
-        return self.__read_string(0x0078, 6, POWERTAG_LINK_SLAVE_ID, 11)
+        return self.__read_string(0x0078, 6, GATEWAY_SLAVE_ID, 11)
 
     # Status
 
     def status(self) -> LinkStatus:
         """PowerTag Link gateway status and diagnostic register"""
-        bitmap = self.__read_int_16(0x0070, POWERTAG_LINK_SLAVE_ID)
+        assert self.type_of_gateway == TypeOfGateway.POWERTAG_LINK
+        bitmap = self.__read_int_16(0x0070, GATEWAY_SLAVE_ID)
         return LinkStatus(bitmap)
+
+    def health(self) -> PanelHealth:
+        """PowerTag Link gateway status and diagnostic register"""
+        assert self.type_of_gateway == TypeOfGateway.PANEL_SERVER
+        code = self.__read_int_16(0x009E, GATEWAY_SLAVE_ID)
+        return PanelHealth(code)
 
     # Date and Time
 
     def date_time(self) -> datetime | None:
         """Indicates the year, month, day, hour, minute and millisecond on the PowerTag Link gateway."""
-        return self.__read_date_time(0x0073, POWERTAG_LINK_SLAVE_ID)
+        return self.__read_date_time(0x0073, GATEWAY_SLAVE_ID)
 
     # Current Metering Data
 
@@ -483,9 +503,14 @@ class SchneiderModbus:
 
     def tag_product_type(self, power_tag_index: int) -> ProductType | None:
         """Wireless device code type"""
-        code = self.__read_int_16(0x7930, power_tag_index)
-        product_type = [p for p in ProductType if p.value[0] == code]
-        return product_type[0] if product_type else None
+        if self.type_of_gateway is TypeOfGateway.POWERTAG_LINK:
+            code = self.__read_int_16(0x7930, power_tag_index)
+            product_type = [p for p in ProductType if p.value[0] == code]
+            return product_type[0] if product_type else None
+        else:
+            identifier = self.__read_int_16(0x7937, power_tag_index)
+            product_type = [p for p in ProductType if p.value[1] == identifier]
+            return product_type[0] if product_type else None
 
     def tag_slave_address(self, power_tag_index: int) -> int | None:
         """Virtual Modbus server address"""
@@ -581,36 +606,60 @@ class SchneiderModbus:
 
     def product_id(self) -> int | None:
         """Product ID of the synthesis table"""
-        return self.__read_int_16(0x0001, self.synthetic_slave_id)
+        if self.type_of_gateway is TypeOfGateway.POWERTAG_LINK:
+            return self.__read_int_16(0x0001, self.synthetic_slave_id)
+        else:
+            return self.__read_int_16(0xF002, GATEWAY_SLAVE_ID)
 
     def manufacturer(self) -> str | None:
         """Product ID of the synthesis table"""
-        return self.__read_string(0x0002, 16, self.synthetic_slave_id, 32)
+        if self.type_of_gateway is TypeOfGateway.POWERTAG_LINK:
+            return self.__read_string(0x0002, 16, self.synthetic_slave_id, 32)
+        else:
+            return self.__read_string(0x009F, 16, GATEWAY_SLAVE_ID, 32)
 
     def product_code(self) -> str | None:
         """Commercial reference of the gateway"""
-        return self.__read_string(0x0012, 16, self.synthetic_slave_id, 32)
+        if self.type_of_gateway is TypeOfGateway.POWERTAG_LINK:
+            return self.__read_string(0x0012, 16, self.synthetic_slave_id, 32)
+        else:
+            return self.__read_string(0x003C, 16, GATEWAY_SLAVE_ID, 32)
 
     def product_range(self) -> str | None:
         """Product range of the gateway"""
-        return self.__read_string(0x0022, 8, self.synthetic_slave_id, 16)
+        if self.type_of_gateway is TypeOfGateway.POWERTAG_LINK:
+            return self.__read_string(0x0022, 8, self.synthetic_slave_id, 16)
+        else:
+            return self.__read_string(0x000A, 16, GATEWAY_SLAVE_ID, 32)
 
     def product_model(self) -> str | None:
         """Product model"""
-        return self.__read_string(0x002A, 8, self.synthetic_slave_id, 16)
+        if self.type_of_gateway is TypeOfGateway.POWERTAG_LINK:
+            return self.__read_string(0x002A, 8, self.synthetic_slave_id, 16)
+        else:
+            return self.__read_string(0xF003, 16, GATEWAY_SLAVE_ID, 32)
 
     def name(self) -> str | None:
         """Asset name"""
-        return self.__read_string(0x0032, 10, self.synthetic_slave_id, 20)
+        if self.type_of_gateway is TypeOfGateway.POWERTAG_LINK:
+            return self.__read_string(0x0032, 10, self.synthetic_slave_id, 20)
+        else:
+            return self.__read_string(0x1605, 32, GATEWAY_SLAVE_ID, 64)
 
     def product_vendor_url(self) -> str | None:
         """Vendor URL"""
-        return self.__read_string(0x003C, 17, self.synthetic_slave_id, 34)
+        if self.type_of_gateway is TypeOfGateway.POWERTAG_LINK:
+            return self.__read_string(0x003C, 17, self.synthetic_slave_id, 34)
+        else:
+            return self.__read_string(0x002A, 17, GATEWAY_SLAVE_ID, 34)
 
     # Wireless Configured Devices – 100 Devices
 
     def modbus_address_of_node(self, node_index: int) -> int | None:
-        return self.__read_int_16(0x012C + node_index - 1, self.synthetic_slave_id)
+        if self.type_of_gateway is TypeOfGateway.POWERTAG_LINK:
+            return self.__read_int_16(0x012C + node_index - 1, self.synthetic_slave_id)
+        else:
+            return self.__read_int_16(0x01F8 + (node_index - 1) * 5, GATEWAY_SLAVE_ID)
 
     # Helper functions
 
@@ -645,33 +694,27 @@ class SchneiderModbus:
         self.__write(address, builder.to_registers(), slave_id)
 
     def __read_float_32(self, address: int, slave_id: int) -> float | None:
-        assert (1 <= slave_id <= 247) or (slave_id == 255)
         result = self.decoder(self.__read(address, 2, slave_id)).decode_32bit_float()
         return result if not math.isnan(result) else None
 
     def __read_int_16(self, address: int, slave_id: int) -> int | None:
-        assert (1 <= slave_id <= 247) or (slave_id == 255)
         result = self.decoder(self.__read(address, 1, slave_id)).decode_16bit_uint()
         return result if result != 0xFFFF else None
 
     def __write_int_16(self, address: int, slave_id: int, value: int):
-        assert (1 <= slave_id <= 247) or (slave_id == 255)
         builder = BinaryPayloadBuilder(byteorder=Endian.BIG, wordorder=Endian.BIG)
         builder.add_16bit_uint(value)
         self.__write(address, builder.to_registers(), slave_id)
 
     def __read_int_32(self, address: int, slave_id: int) -> int | None:
-        assert (1 <= slave_id <= 247) or (slave_id == 255)
         result = self.decoder(self.__read(address, 2, slave_id)).decode_32bit_uint()
         return result if result != 0x8000_0000 else None
 
     def __read_int_64(self, address: int, slave_id: int) -> int | None:
-        assert (1 <= slave_id <= 247) or (slave_id == 255)
         result = self.decoder(self.__read(address, 4, slave_id)).decode_64bit_uint()
         return result if result != 0x8000_0000_0000_0000 else None
 
     def __write_int_64(self, address: int, slave_id: int, value: int):
-        assert (1 <= slave_id <= 247) or (slave_id == 255)
         builder = BinaryPayloadBuilder(byteorder=Endian.BIG, wordorder=Endian.BIG)
         builder.add_64bit_uint(value)
         self.__write(address, builder.to_registers(), slave_id)

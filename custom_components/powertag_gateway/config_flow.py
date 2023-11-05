@@ -26,9 +26,9 @@ from .const import (
     DPWS_PRESENTATION_URL,
     DPWS_FRIENDLY_NAME,
     DPWS_SERIAL_NUMBER,
-    DOMAIN
+    DOMAIN, CONF_TYPE_OF_GATEWAY
 )
-from .schneider_modbus import SchneiderModbus
+from .schneider_modbus import SchneiderModbus, TypeOfGateway
 from .soap_communication import Soapy
 
 _LOGGER = logging.getLogger(__name__)
@@ -43,15 +43,19 @@ class DiscoveredDevice:
 
         self.host = urlparse(self.presentation_url).hostname
 
+        self.type_of_gateway = TypeOfGateway.PANEL_SERVER \
+            if self.friendly_name.startswith("PAS") \
+            else TypeOfGateway.POWERTAG_LINK
+
         try:
-            SchneiderModbus(self.host, DEFAULT_MODBUS_PORT, timeout=1)
+            SchneiderModbus(self.host, self.type_of_gateway, DEFAULT_MODBUS_PORT, timeout=1)
             self.port = DEFAULT_MODBUS_PORT
         except ConnectionException:
             self.port = None
 
 
 def find_tag(tag, source):
-    return next(re.finditer(f"<.*:{tag}>(.*)</.*:{tag}>", source)).group(1)
+    return next(re.finditer(f"<.*:{tag}.*>(.*)</.*:{tag}>", source)).group(1)
 
 
 def dpws_discovery() -> list[Service]:
@@ -105,6 +109,7 @@ class PowerTagFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         self.model_name = None
         self.presentation_url = None
         self.name = None
+        self.type_of_gateway = TypeOfGateway.POWERTAG_LINK.value
 
     async def async_step_user(self, user_input=None) -> FlowResult:
         """Handle user flow."""
@@ -135,6 +140,7 @@ class PowerTagFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                     self.serial_number = device.serial_number
                     self.host = device.host
                     self.port = device.port
+                    self.type_of_gateway = device.type_of_gateway.value
                     self.model_name = device.model_name
                     self.presentation_url = device.presentation_url
                     return await self.async_step_configure()
@@ -167,6 +173,7 @@ class PowerTagFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input:
             self.host = user_input[CONF_HOST]
             self.port = user_input[CONF_PORT]
+            self.type_of_gateway = user_input[CONF_TYPE_OF_GATEWAY]
             try:
                 return await self.async_step_connect()
             except Exception:
@@ -178,6 +185,8 @@ class PowerTagFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 {
                     vol.Required(CONF_HOST, default=self.host): str,
                     vol.Required(CONF_PORT, default=self.port): cv.port,
+                    vol.Required(CONF_TYPE_OF_GATEWAY, default=self.type_of_gateway):
+                        vol.In([TypeOfGateway.POWERTAG_LINK.value, TypeOfGateway.PANEL_SERVER.value])
                 }
             ),
             errors=errors,
@@ -187,9 +196,11 @@ class PowerTagFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_connect(self) -> FlowResult:
         """Connect to the PowerTag Link Gateway device."""
 
+        type_of_gateway = [t for t in TypeOfGateway if t.value == self.type_of_gateway][0]
+
         try:
             if self.client is None:
-                self.client = SchneiderModbus(self.host, self.port)
+                self.client = SchneiderModbus(self.host, type_of_gateway, self.port)
         except ConnectionException as e:
             _LOGGER.exception(e)
             return self.async_abort(reason="cannot_connect")
@@ -218,6 +229,7 @@ class PowerTagFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 CONF_HOST: self.host,
                 CONF_PORT: self.port,
                 CONF_INTERNAL_URL: self.presentation_url,
+                CONF_TYPE_OF_GATEWAY: self.type_of_gateway
             },
         )
 

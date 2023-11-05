@@ -1,3 +1,5 @@
+import logging
+
 from homeassistant.components.button import ButtonEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_INTERNAL_URL
@@ -6,8 +8,10 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import CONF_CLIENT, DOMAIN
-from .entity_base import PowerTagEntity, gateway_device_info, tag_device_info, is_r
+from .entity_base import PowerTagEntity, gateway_device_info, tag_device_info, is_r, is_powertag
 from .schneider_modbus import SchneiderModbus
+
+log = logging.getLogger(__name__)
 
 
 async def async_setup_entry(
@@ -25,9 +29,17 @@ async def async_setup_entry(
     gateway_device = gateway_device_info(client, presentation_url)
 
     for i in range(1, 100):
+        log.info(f"Setting up device index {i}")
         modbus_address = client.modbus_address_of_node(i)
+        log.info(f"Modbus address of that device is {i}")
         if modbus_address is None:
             break
+
+        product_type = client.tag_product_type(modbus_address)
+        log.info(f"Setting up {product_type}...")
+        if not is_powertag(product_type):
+            log.warning(f"Product {product_type} is not yet supported by this integration.")
+            continue
 
         tag_device = tag_device_info(
             client, modbus_address, presentation_url, next(iter(gateway_device["identifiers"]))
@@ -35,7 +47,6 @@ async def async_setup_entry(
 
         entities.append(PowerTagResetPeakDemand(client, modbus_address, tag_device))
 
-        product_type = client.tag_product_type(modbus_address)
         class_r = is_r(product_type)
 
         if class_r:
@@ -132,5 +143,3 @@ class PowerTagResetReactiveEnergyReceived(PowerTagEntity, ButtonEntity):
 
     def reset(self):
         self._client.tag_reset_energy_reactive_received_partial(self._modbus_index)
-
-

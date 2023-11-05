@@ -10,8 +10,9 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import CONF_CLIENT, DOMAIN
 from .entity_base import gateway_device_info, tag_device_info, has_neutral, \
-    phase_sequence_to_phases, phase_sequence_to_line_voltages, GatewayEntity, PowerTagEntity, is_m, is_r
-from .schneider_modbus import SchneiderModbus, Phase, LineVoltage, PhaseSequence, PowerFactorSignConvention
+    phase_sequence_to_phases, phase_sequence_to_line_voltages, GatewayEntity, PowerTagEntity, is_m, is_r, is_powertag
+from .schneider_modbus import SchneiderModbus, Phase, LineVoltage, PhaseSequence, PowerFactorSignConvention, \
+    TypeOfGateway
 
 PLATFORMS: list[str] = ["sensor"]
 
@@ -39,6 +40,12 @@ async def async_setup_entry(
         if modbus_address is None:
             break
 
+        product_type = client.tag_product_type(modbus_address)
+        log.info(f"Setting up {product_type}...")
+        if not is_powertag(product_type):
+            log.warning(f"Product {product_type} is not yet supported by this integration.")
+            continue
+
         tag_device = tag_device_info(
             client, modbus_address, presentation_url, next(iter(gateway_device["identifiers"]))
         )
@@ -56,7 +63,6 @@ async def async_setup_entry(
             PowerTagPerGateway(client, modbus_address, tag_device)
         ])
 
-        product_type = client.tag_product_type(modbus_address)
         neutral = has_neutral(product_type)
 
         class_m = is_m(product_type)
@@ -88,7 +94,7 @@ async def async_setup_entry(
                 PowerTagTotalApparentEnergy(client, modbus_address, tag_device),
             ])
 
-        if not class_m:
+        if client.type_of_gateway == TypeOfGateway.POWERTAG_LINK and not class_m:
             entities.extend([
                 PowerTagDemandActivePower(client, modbus_address, tag_device),
             ])
@@ -487,7 +493,8 @@ class PowerTagTotalReactiveEnergyDeliveredPerPhase(PowerTagEntity, SensorEntity)
         self.__phase = phase
 
     async def async_update(self):
-        self._attr_native_value = self._client.tag_energy_reactive_delivered_total_phase(self._modbus_index, self.__phase)
+        self._attr_native_value = self._client.tag_energy_reactive_delivered_total_phase(self._modbus_index,
+                                                                                         self.__phase)
 
 
 class PowerTagPartialReactiveEnergyReceivedPerPhase(PowerTagEntity, SensorEntity):
@@ -515,7 +522,8 @@ class PowerTagTotalReactiveEnergyReceivedPerPhase(PowerTagEntity, SensorEntity):
         self.__phase = phase
 
     async def async_update(self):
-        self._attr_native_value = self._client.tag_energy_reactive_received_total_phase(self._modbus_index, self.__phase)
+        self._attr_native_value = self._client.tag_energy_reactive_received_total_phase(self._modbus_index,
+                                                                                        self.__phase)
 
 
 class PowerTagPartialApparentEnergy(PowerTagEntity, SensorEntity):

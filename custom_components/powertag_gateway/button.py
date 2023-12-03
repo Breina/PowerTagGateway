@@ -11,7 +11,7 @@ from .const import CONF_CLIENT, DOMAIN
 from .entity_base import PowerTagEntity, gateway_device_info, tag_device_info, is_r, is_powertag
 from .schneider_modbus import SchneiderModbus
 
-log = logging.getLogger(__name__)
+_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(
@@ -29,21 +29,26 @@ async def async_setup_entry(
     gateway_device = gateway_device_info(client, presentation_url)
 
     for i in range(1, 100):
-        log.info(f"Setting up device index {i}")
+        _LOGGER.info(f"Setting up device index {i}")
         modbus_address = client.modbus_address_of_node(i)
-        log.info(f"Modbus address of that device is {i}")
+        _LOGGER.info(f"Modbus address of that device is {i}")
         if modbus_address is None:
             break
 
         product_type = client.tag_product_type(modbus_address)
-        log.info(f"Setting up {product_type}...")
+        _LOGGER.info(f"Setting up {product_type}...")
         if not is_powertag(product_type):
-            log.warning(f"Product {product_type} is not yet supported by this integration.")
+            _LOGGER.warning(f"Product {product_type} is not yet supported by this integration.")
             continue
 
         tag_device = tag_device_info(
             client, modbus_address, presentation_url, next(iter(gateway_device["identifiers"]))
         )
+
+        is_disabled = client.tag_radio_lqi_gateway(modbus_address) is None
+        if is_disabled:
+            _LOGGER.warning(f"The device {client.tag_name(modbus_address)} is not reachable; will ignore this one.")
+            continue
 
         entities.append(PowerTagResetPeakDemand(client, modbus_address, tag_device))
 

@@ -6,21 +6,16 @@ import logging
 import re
 from urllib.parse import urlparse
 
+import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.const import CONF_HOST, CONF_PORT, CONF_DEVICE, CONF_INTERNAL_URL
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
-import homeassistant.helpers.config_validation as cv
 from pymodbus.exceptions import ConnectionException
-from wsdiscovery import QName
-from wsdiscovery.discovery import ThreadedWSDiscovery as WSDiscovery
-from wsdiscovery.service import Service
 
 from .const import (
     DEFAULT_MODBUS_PORT,
-    SCHNEIDER_QNAME,
-    SCHNEIDER_QNAME_GATEWAY,
     CONF_MANUAL_INPUT,
     DPWS_MODEL_NAME,
     DPWS_PRESENTATION_URL,
@@ -29,13 +24,13 @@ from .const import (
     DOMAIN, CONF_TYPE_OF_GATEWAY
 )
 from .schneider_modbus import SchneiderModbus, TypeOfGateway
-from .soap_communication import Soapy
+from .soap_communication import Soapy, dpws_discovery
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class DiscoveredDevice:
-    def __init__(self, content: str) -> None:
+    def __init__(self, content: str, type_of_gateway: TypeOfGateway) -> None:
         self.model_name = find_tag(DPWS_MODEL_NAME, content)
         self.presentation_url = find_tag(DPWS_PRESENTATION_URL, content)
         self.friendly_name = find_tag(DPWS_FRIENDLY_NAME, content)
@@ -43,9 +38,7 @@ class DiscoveredDevice:
 
         self.host = urlparse(self.presentation_url).hostname
 
-        self.type_of_gateway = TypeOfGateway.PANEL_SERVER \
-            if self.friendly_name.startswith("PAS") \
-            else TypeOfGateway.POWERTAG_LINK
+        self.type_of_gateway = type_of_gateway
 
         try:
             SchneiderModbus(self.host, self.type_of_gateway, DEFAULT_MODBUS_PORT, timeout=1)
@@ -58,32 +51,24 @@ def find_tag(tag, source):
     return next(re.finditer(f"<.*:{tag}.*>(.*)</.*:{tag}>", source)).group(1)
 
 
-def dpws_discovery() -> list[Service]:
-    """Search a Link Gateway from the network"""
-    _LOGGER.info("Attempting to discover EnergyTag Gateway")
-
-    wsd = WSDiscovery()
-    wsd.start()
-    services = wsd.searchServices(types=[QName(SCHNEIDER_QNAME, SCHNEIDER_QNAME_GATEWAY)])
-    wsd.stop()
-    return services
-
-
 async def async_discovery(hass: HomeAssistant) -> list[DiscoveredDevice]:
     """Return if there are devices that can be discovered."""
     services = await hass.async_add_executor_job(dpws_discovery)
 
     _LOGGER.info(f"Found {len(services)} candidates...")
+    for s in dpws_discovery():
+        _LOGGER.info(s.getTypes())
 
     discovered_devices = []
 
     for service in services:
         soapy = Soapy(service, hass)
+        type_of_gateway = TypeOfGateway.PANEL_SERVER if soapy.is_panel_server() else TypeOfGateway.POWERTAG_LINK
         result = await soapy.transfer_get()
         if result.status_code != 200:
             continue
 
-        discovered_devices.append(DiscoveredDevice(result.text))
+        discovered_devices.append(DiscoveredDevice(result.text, type_of_gateway))
 
     if discovered_devices:
         _LOGGER.info(f"Found {[s.friendly_name for s in discovered_devices]}")

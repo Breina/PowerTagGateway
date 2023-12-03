@@ -75,15 +75,31 @@ class DeviceUsage(enum.Enum):
     food_refrigeration = 10
     elevators = 11
     computers = 12
-    renewable_energy_production = 13
+    renewable_power_source = 13
     genset = 14
     compressed_air = 15
     vapor = 16
     machine = 17
     process = 18
-    water = 19
+    water_system_pumps = 19
     other_sockets = 20
     other = 21
+    electrical_vehicle_charging_station = 22
+    loads_associated_with_renewable_power_source = 23
+    plug_loads = 24
+    air_conditioning = 25
+    domestic_hot_water = 26
+    heating_air_conditioning = 27
+    hot_sanitary_water = 28
+    it = 29
+    lighting_interior = 30
+    lighting_exterior_and_park = 31
+    mixed_usages = 32
+    refrigeration = 33
+    special_loads = 34
+    total = 35
+    transportation_system = 36
+    water = 37
     INVALID = None
 
 
@@ -109,7 +125,7 @@ class Position(enum.Enum):
 
 
 class ProductType(enum.Enum):
-    A9MEM1520 = (41, 17200,  "PowerTag M63 1P")
+    A9MEM1520 = (41, 17200, "PowerTag M63 1P")
     A9MEM1521 = (42, 17201, "PowerTag M63 1P+N Top")
     A9MEM1522 = (43, 17202, "PowerTag M63 1P+N Bottom")
     A9MEM1540 = (44, 17203, "PowerTag M63 3P")
@@ -503,14 +519,9 @@ class SchneiderModbus:
 
     def tag_product_type(self, power_tag_index: int) -> ProductType | None:
         """Wireless device code type"""
-        if self.type_of_gateway is TypeOfGateway.POWERTAG_LINK:
-            code = self.__read_int_16(0x7930, power_tag_index)
-            product_type = [p for p in ProductType if p.value[0] == code]
-            return product_type[0] if product_type else None
-        else:
-            identifier = self.__read_int_16(0x7937, power_tag_index)
-            product_type = [p for p in ProductType if p.value[1] == identifier]
-            return product_type[0] if product_type else None
+        identifier = self.__read_int_16(0x7937, power_tag_index)
+        product_type = [p for p in ProductType if p.value[1] == identifier]
+        return product_type[0] if product_type else None
 
     def tag_slave_address(self, power_tag_index: int) -> int | None:
         """Virtual Modbus server address"""
@@ -519,10 +530,6 @@ class SchneiderModbus:
     def tag_rf_id(self, power_tag_index: int) -> int | None:
         """Wireless device Radio Frequency Identifier"""
         return self.__read_int_64(0x7932, power_tag_index)
-
-    def tag_product_identifier(self, power_tag_index: int) -> int | None:
-        """Wireless device identifier"""
-        return self.__read_int_16(0x7937, power_tag_index)
 
     def tag_vendor_name(self, power_tag_index: int) -> str | None:
         """Vendor name"""

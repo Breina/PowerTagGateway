@@ -16,7 +16,7 @@ from .schneider_modbus import SchneiderModbus, Phase, LineVoltage, PhaseSequence
 
 PLATFORMS: list[str] = ["sensor"]
 
-log = logging.getLogger(__name__)
+_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(
@@ -41,14 +41,19 @@ async def async_setup_entry(
             break
 
         product_type = client.tag_product_type(modbus_address)
-        log.info(f"Setting up {product_type}...")
+        _LOGGER.info(f"Setting up {product_type}...")
         if not is_powertag(product_type):
-            log.warning(f"Product {product_type} is not yet supported by this integration.")
+            _LOGGER.warning(f"Product {product_type} is not yet supported by this integration.")
             continue
 
         tag_device = tag_device_info(
             client, modbus_address, presentation_url, next(iter(gateway_device["identifiers"]))
         )
+
+        is_disabled = client.tag_radio_lqi_gateway(modbus_address) is None
+        if is_disabled:
+            _LOGGER.warning(f"The device {client.tag_name(modbus_address)} is not reachable; will ignore this one.")
+            continue
 
         entities.extend([
             PowerTagApparentPower(client, modbus_address, tag_device),
@@ -60,7 +65,8 @@ async def async_setup_entry(
             PowerTagLqiTag(client, modbus_address, tag_device),
             PowerTagLqiGateway(client, modbus_address, tag_device),
             PowerTagPerTag(client, modbus_address, tag_device),
-            PowerTagPerGateway(client, modbus_address, tag_device)
+            PowerTagPerGateway(client, modbus_address, tag_device),
+            PowerTagTemperature(client, modbus_address, tag_device),
         ])
 
         neutral = has_neutral(product_type)
@@ -72,7 +78,6 @@ async def async_setup_entry(
             entities.extend([
                 PowerTagReactivePower(client, modbus_address, tag_device),
                 PowerTagFrequency(client, modbus_address, tag_device),
-                PowerTagTemperature(client, modbus_address, tag_device),
             ])
         else:
             entities.extend([
@@ -101,8 +106,8 @@ async def async_setup_entry(
 
         phase_sequence = client.tag_phase_sequence(modbus_address)
         if phase_sequence == PhaseSequence.INVALID:
-            log.warning(f"The phase sequence of {tag_device['name']} was not defined."
-                        f"Skipping adding phase-specific entities...")
+            _LOGGER.warning(f"The phase sequence of {tag_device['name']} was not defined."
+                            f"Skipping adding phase-specific entities...")
 
         for phase in phase_sequence_to_phases(phase_sequence):
             entities.append(PowerTagCurrent(client, modbus_address, tag_device, phase))

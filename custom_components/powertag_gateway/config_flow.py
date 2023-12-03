@@ -23,7 +23,7 @@ from .const import (
     DPWS_SERIAL_NUMBER,
     DOMAIN, CONF_TYPE_OF_GATEWAY
 )
-from .schneider_modbus import SchneiderModbus, TypeOfGateway
+from .schneider_modbus import SchneiderModbus, TypeOfGateway, LinkStatus, PanelHealth
 from .soap_communication import Soapy, dpws_discovery
 
 _LOGGER = logging.getLogger(__name__)
@@ -96,6 +96,9 @@ class PowerTagFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         self.name = None
         self.type_of_gateway = TypeOfGateway.POWERTAG_LINK.value
 
+        self.skip_degradation_warning = False
+        self.status = None
+
     async def async_step_user(self, user_input=None) -> FlowResult:
         """Handle user flow."""
         if user_input:
@@ -154,6 +157,7 @@ class PowerTagFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_configure(self, user_input=None) -> FlowResult:
         """Device configuration."""
+        _LOGGER.warning(f"ENTERING async_step_configure with user input {user_input}")
         errors = {}
         if user_input:
             self.host = user_input[CONF_HOST]
@@ -161,8 +165,8 @@ class PowerTagFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             self.type_of_gateway = user_input[CONF_TYPE_OF_GATEWAY]
             try:
                 return await self.async_step_connect()
-            except Exception:
-                errors["base"] = "cannot_connect"
+            except Exception as e:
+                errors["base"] = "connection_error"
 
         return self.async_show_form(
             step_id="configure",
@@ -178,17 +182,36 @@ class PowerTagFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             last_step=True
         )
 
-    async def async_step_connect(self) -> FlowResult:
+    async def async_step_degraded(self, _=None) -> FlowResult:
+        return self.async_show_menu(
+            step_id="degraded",
+            menu_options={
+                "continue": "Continue",
+                "abort": "Abort",
+            },
+            description_placeholders={"status": self.status.name}
+        )
+
+    async def async_step_abort(self, _=None) -> FlowResult:
+        return self.async_abort(reason="user_cancelled")
+
+    async def async_step_continue(self, user_input=None) -> FlowResult:
+        self.skip_degradation_warning = True
+        return await self.async_step_connect(user_input)
+
+    async def async_step_connect(self, user_input=None) -> FlowResult:
         """Connect to the PowerTag Link Gateway device."""
+        _LOGGER.warning(f"ENTERING async_step_connect with user input {user_input}")
 
         type_of_gateway = [t for t in TypeOfGateway if t.value == self.type_of_gateway][0]
 
-        try:
-            if self.client is None:
-                self.client = SchneiderModbus(self.host, type_of_gateway, self.port)
-        except ConnectionException as e:
-            _LOGGER.exception(e)
-            return self.async_abort(reason="cannot_connect")
+        self.client = SchneiderModbus(self.host, type_of_gateway, self.port)
+
+        if (type_of_gateway is TypeOfGateway.POWERTAG_LINK and self.client.status() != LinkStatus.OPERATING) or (
+                type_of_gateway is TypeOfGateway.PANEL_SERVER and self.client.health() != PanelHealth.NOMINAL):
+            if not self.skip_degradation_warning:
+                self.status = self.client.status() if type_of_gateway is TypeOfGateway.POWERTAG_LINK else self.client.health()
+                return await self.async_step_degraded()
 
         if not self.serial_number:
             self.serial_number = self.client.serial_number()

@@ -14,12 +14,25 @@
         }
       },
       "configure": {
-        "description": "Configure the some network parameters",
+        "description": "Configure the network parameters",
         "data": {
           "host": "Host",
           "port": "Modbus TCP port"
         }
+      },
+      "degraded": {
+        "description": "The gateway is saying its status is {status}. If you continue, it's possible that not all devices are added.",
+        "menu_options": {
+          "continue": "Continue",
+          "abort": "Abort"
+        }
       }
+    },
+    "error": {
+      "connection_error": "Failed to connect"
+    },
+    "abort": {
+      "user_cancelled": "User cancelled",
     }
   }
 }

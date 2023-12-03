@@ -19,7 +19,20 @@
           "host": "Host",
           "port": "Modbus TCP poort"
         }
+      },
+      "degraded": {
+        "description": "De gateway zegt dat zijn status {status} is. Als je verder gaat is het mogelijk dat niet alle apparaten worden toegevoegd.",
+        "menu_options": {
+          "continue": "Verder gaan",
+          "abort": "Stoppen"
+        }
       }
+    },
+    "error": {
+      "connection_error": "Verbinding mislukt"
+    },
+    "abort": {
+      "user_cancelled": "Geannuleerd"
     }
   }
 }

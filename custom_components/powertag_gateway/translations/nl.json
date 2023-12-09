@@ -2,12 +2,13 @@
   "config": {
     "step": {
       "user": {
-        "description": "Doorzoek je netwerk?",
+        "description": "Hoe gaan we het hier doen?",
         "data": {
-          "auto": "Ontdenk Gateways automatisch"
+          "discover": "Automatisch zoeken via DPWS discovery",
+          "configure": "Manueel configureren"
         }
       },
-      "device": {
+      "discover": {
         "description": "Kies je PowerTag Link Gateway apparaat",
         "data": {
           "device": "Apparaat"
@@ -17,7 +18,8 @@
         "description": "Configureer enkele netwerk parameters",
         "data": {
           "host": "Host",
-          "port": "Modbus TCP poort"
+          "port": "Modbus TCP poort",
+          "type_of_gateway": "Type gateway"
         }
       },
       "degraded": {
@@ -29,7 +31,8 @@
       }
     },
     "error": {
-      "connection_error": "Verbinding mislukt"
+      "connection_error": "Verbinding mislukt",
+      "discovery": "Ik kon niks vinden. Zorg dat uw DPWS diensten aan staan!"
     },
     "abort": {
       "user_cancelled": "Geannuleerd"

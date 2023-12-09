@@ -2,13 +2,14 @@
   "config": {
     "step": {
       "user": {
-        "description": "Search the network?",
+        "description": "How to set up?",
         "data": {
-          "auto": "Discover automatically"
+          "discover": "Perform automatic DPWS discovery",
+          "configure": "Manually configure"
         }
       },
-      "device": {
-        "description": "Select your PowerTag Link Gateway device",
+      "discover": {
+        "description": "Select your gateway device",
         "data": {
           "device": "Device"
         }
@@ -17,7 +18,8 @@
         "description": "Configure the network parameters",
         "data": {
           "host": "Host",
-          "port": "Modbus TCP port"
+          "port": "Modbus TCP port",
+          "type_of_gateway": "Type of gateway"
         }
       },
       "degraded": {
@@ -29,10 +31,11 @@
       }
     },
     "error": {
-      "connection_error": "Failed to connect"
+      "connection_error": "Failed to connect",
+      "discovery": "Failed to discover any gateway servers. Please verify that DPWS is enabled."
     },
     "abort": {
-      "user_cancelled": "User cancelled",
+      "user_cancelled": "User cancelled"
     }
   }
 }

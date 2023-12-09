@@ -98,20 +98,19 @@ class PowerTagFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
         self.skip_degradation_warning = False
         self.status = None
+        self.errors = {}
 
     async def async_step_user(self, user_input=None) -> FlowResult:
         """Handle user flow."""
-        if user_input:
-            if user_input["auto"]:
-                return await self.async_step_device()
-            return await self.async_step_configure()
-
-        return self.async_show_form(
+        return self.async_show_menu(
             step_id="user",
-            data_schema=vol.Schema({vol.Required("auto", default=True): bool}),
+            menu_options={
+                "discover": "Perform automatic DPWS discovery",
+                "configure": "Manually configure",
+            }
         )
 
-    async def async_step_device(self, user_input=None) -> FlowResult:
+    async def async_step_discover(self, user_input=None) -> FlowResult:
         """Handle WS-Discovery.
 
         Let user choose between discovered devices and manual configuration.
@@ -119,7 +118,7 @@ class PowerTagFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         """
         if user_input:
             if CONF_MANUAL_INPUT == user_input[CONF_DEVICE]:
-                return await self.async_step_configure()
+                return await self.async_step_connect()
 
             for device in self.devices:
                 name = f"{device.friendly_name}: {device.model_name} ({device.host})"
@@ -131,7 +130,7 @@ class PowerTagFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                     self.type_of_gateway = device.type_of_gateway.value
                     self.model_name = device.model_name
                     self.presentation_url = device.presentation_url
-                    return await self.async_step_configure()
+                    return await self.async_step_connect()
 
         discovered_devices = await async_discovery(self.hass)
         for device in discovered_devices:
@@ -149,24 +148,25 @@ class PowerTagFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             names.append(CONF_MANUAL_INPUT)
 
             return self.async_show_form(
-                step_id="device",
+                step_id="discover",
                 data_schema=vol.Schema({vol.Required(CONF_DEVICE): vol.In(names)}),
             )
 
+        self.errors["base"] = "discovery"
         return await self.async_step_configure()
 
     async def async_step_configure(self, user_input=None) -> FlowResult:
         """Device configuration."""
-        _LOGGER.warning(f"ENTERING async_step_configure with user input {user_input}")
-        errors = {}
+
         if user_input:
+            self.errors = {}
             self.host = user_input[CONF_HOST]
             self.port = user_input[CONF_PORT]
             self.type_of_gateway = user_input[CONF_TYPE_OF_GATEWAY]
             try:
                 return await self.async_step_connect()
             except Exception as e:
-                errors["base"] = "connection_error"
+                self.errors["base"] = "connection_error"
 
         return self.async_show_form(
             step_id="configure",
@@ -178,7 +178,7 @@ class PowerTagFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                         vol.In([TypeOfGateway.POWERTAG_LINK.value, TypeOfGateway.PANEL_SERVER.value])
                 }
             ),
-            errors=errors,
+            errors=self.errors,
             last_step=True
         )
 
@@ -201,8 +201,6 @@ class PowerTagFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_connect(self, user_input=None) -> FlowResult:
         """Connect to the PowerTag Link Gateway device."""
-        _LOGGER.warning(f"ENTERING async_step_connect with user input {user_input}")
-
         type_of_gateway = [t for t in TypeOfGateway if t.value == self.type_of_gateway][0]
 
         self.client = SchneiderModbus(self.host, type_of_gateway, self.port)

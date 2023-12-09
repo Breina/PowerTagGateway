@@ -72,7 +72,6 @@ This will enable monitor electric circuits in great detail.
 * A9XMC1D3, A9XMC2D3
 * A9XMWRD
 * SMT10020
-* PAS600
 
 
 # Installation
@@ -91,19 +90,35 @@ To make your life easier later, it's also recommended to enable the _DISCOVERY_ 
 
 ### PowerTag Link
 
-Navigate to _SETTINGS_ > _IP NETWORK SERVICES_
+1. Navigate to _SETTINGS_ > _IP NETWORK SERVICES_
+2. Enable Modbus TCP
+3. Optional: Enable Discovery
+4. Save
 
 ![The IP services configuration](images/Web_config.png)
 
+_The IP services configuration_
+
 ### Panel Server
 
-Navigate to _Settings_ > _Network communication_ > Services
+1. Navigate to _Settings_ > _Network communication_ > Services
+2. Enable Modbus TCP/IP
+3. _Save_ > _Save_
+4. Optional: activate discovery
+   1. Navigate to _Settings_ > _Network communication_ > Ethernet
+   2. Under _Switched port settings_, disable _IPv6 activation_. The library perform DPWS discovery does not currently support IPv6. If you need this, you can not use discovery and will need to enter the device's IP address manually. [GitHub issue](https://github.com/andreikop/python-ws-discovery/issues/58)
+   3. _Save_ > _Save & apply configuration_
+   4. Navigate to _Settings_ > _Network communication_ > DPWS
+   5. Enable _DPWS Activation_
+   6. _Save_ > _Save_
 
 ![The modbus service configuration](images/Web_config_panel_modbus.png)
 
-Navigate to _Settings_ > _Network communication_ > DPWS
+_The modbus service configuration_
 
 ![The DPWS service configuration](images/Web_config_panel_dpws.png)
+
+_The DPWS service configuration_
 
 ## Installation
 

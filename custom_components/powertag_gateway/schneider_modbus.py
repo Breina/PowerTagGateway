@@ -229,7 +229,11 @@ class SchneiderModbus:
         """PowerTag Link gateway status and diagnostic register"""
         assert self.type_of_gateway == TypeOfGateway.POWERTAG_LINK
         bitmap = self.__read_int_16(0x0070, GATEWAY_SLAVE_ID)
-        return LinkStatus(bitmap)
+        try:
+            return LinkStatus(bitmap)
+        except Exception as e:
+            logging.error(f"Could not map status, defaulting to GENERAL_FAILURE ({str(e)}")
+            return LinkStatus.GENERAL_FAILURE
 
     def health(self) -> PanelHealth:
         """PowerTag Link gateway status and diagnostic register"""
@@ -769,3 +773,8 @@ class SchneiderModbus:
             return None
 
         return datetime(year, month, day, hour, minute, second, millisecond)
+
+try:
+    LinkStatus(232323)
+except Exception as e:
+    print(e)

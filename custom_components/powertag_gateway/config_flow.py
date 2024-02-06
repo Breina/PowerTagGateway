@@ -208,21 +208,29 @@ class PowerTagFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         """Connect to the PowerTag Link Gateway device."""
         type_of_gateway = [t for t in TypeOfGateway if t.value == self.type_of_gateway][0]
 
+        logging.info("Setting up modbus client...")
         self.client = SchneiderModbus(self.host, type_of_gateway, self.port)
 
+        logging.info("Checking status...")
         if ((type_of_gateway in [TypeOfGateway.POWERTAG_LINK] or TypeOfGateway.SMARTLINK) and self.client.status() != LinkStatus.OPERATING) or (
                 type_of_gateway is TypeOfGateway.PANEL_SERVER and self.client.health() != PanelHealth.NOMINAL):
             if not self.skip_degradation_warning:
                 self.status = self.client.status() if type_of_gateway is TypeOfGateway.POWERTAG_LINK else self.client.health()
                 return await self.async_step_degraded()
 
+        logging.info("Retrieving serial number...")
         if not self.serial_number:
             self.serial_number = self.client.serial_number()
+
+        logging.info("Retrieving model name...")
         if not self.model_name:
             self.model_name = self.client.product_model()
+
+        logging.info("Retrieving device name...")
         if not self.name:
             self.name = self.client.name()
 
+        logging.info("Got everything, continuing creation process...")
         if self.serial_number is not None:
             unique_id = self.construct_unique_id(self.model_name, self.serial_number)
             await self.async_set_unique_id(unique_id)

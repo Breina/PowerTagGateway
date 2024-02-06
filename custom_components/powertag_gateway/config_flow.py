@@ -166,7 +166,7 @@ class PowerTagFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             try:
                 return await self.async_step_connect()
             except Exception as e:
-                logging.error(e)
+                logging.exception(e)
                 self.errors["base"] = "connection_error"
 
         return self.async_show_form(

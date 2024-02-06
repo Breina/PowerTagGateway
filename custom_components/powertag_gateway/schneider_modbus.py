@@ -199,7 +199,10 @@ class SchneiderModbus:
         """Gateway Hardware version
         valid for firmware version 001.008.007 and later.
         """
-        return self.__read_string(0x0050, 6, GATEWAY_SLAVE_ID, 11)
+        if self.type_of_gateway == TypeOfGateway.SMARTLINK:
+            return self.__read_string(0x006A, 3, GATEWAY_SLAVE_ID, 6)
+        else:
+            return self.__read_string(0x0050, 6, GATEWAY_SLAVE_ID, 11)
 
     def serial_number(self) -> str:
         """[S/N]: PP YY WW [D [nnnn]]
@@ -211,17 +214,12 @@ class SchneiderModbus:
         """
         return self.__read_string(0x0064, 6, GATEWAY_SLAVE_ID, 11)
 
-    def hardware_version_legacy(self) -> str:
-        """valid up to firmware version 001.008.007"""
-        return self.__read_string(0x006A, 3, GATEWAY_SLAVE_ID, 6)
-
-    def firmware_version_legacy(self) -> str:
-        """valid up to firmware version 001.008.007"""
-        return self.__read_string(0x006D, 3, GATEWAY_SLAVE_ID, 6)
-
     def firmware_version(self) -> str:
         """valid for firmware version 001.008.007 and later."""
-        return self.__read_string(0x0078, 6, GATEWAY_SLAVE_ID, 11)
+        if self.type_of_gateway == TypeOfGateway.SMARTLINK:
+            return self.__read_string(0x006D, 3, GATEWAY_SLAVE_ID, 6)
+        else:
+            return self.__read_string(0x0078, 6, GATEWAY_SLAVE_ID, 11)
 
     # Status
 

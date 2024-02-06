@@ -227,7 +227,7 @@ class SchneiderModbus:
 
     def status(self) -> LinkStatus:
         """PowerTag Link gateway status and diagnostic register"""
-        assert self.type_of_gateway == TypeOfGateway.POWERTAG_LINK
+        assert self.type_of_gateway in [TypeOfGateway.POWERTAG_LINK, TypeOfGateway.SMARTLINK]
         bitmap = self.__read_int_16(0x0070, GATEWAY_SLAVE_ID)
         try:
             return LinkStatus(bitmap)

@@ -173,6 +173,7 @@ class ElectricalNetworkSystemType(enum.Enum):
 class TypeOfGateway(enum.Enum):
     PANEL_SERVER = "Panel server"
     POWERTAG_LINK = "Powertag Link"
+    SMARTLINK = "Smartlink SI D"
 
 
 class SchneiderModbus:
@@ -615,55 +616,75 @@ class SchneiderModbus:
         """Product ID of the synthesis table"""
         if self.type_of_gateway is TypeOfGateway.POWERTAG_LINK:
             return self.__read_int_16(0x0001, self.synthetic_slave_id)
-        else:
+        elif self.type_of_gateway is TypeOfGateway.PANEL_SERVER:
             return self.__read_int_16(0xF002, GATEWAY_SLAVE_ID)
+        else:
+            return None
 
     def manufacturer(self) -> str | None:
         """Product ID of the synthesis table"""
         if self.type_of_gateway is TypeOfGateway.POWERTAG_LINK:
             return self.__read_string(0x0002, 16, self.synthetic_slave_id, 32)
-        else:
+        elif self.type_of_gateway is TypeOfGateway.PANEL_SERVER:
             return self.__read_string(0x009F, 16, GATEWAY_SLAVE_ID, 32)
+        elif self.type_of_gateway is TypeOfGateway.SMARTLINK:
+            return "Schneider Electric"
+        else:
+            return None
 
     def product_code(self) -> str | None:
         """Commercial reference of the gateway"""
         if self.type_of_gateway is TypeOfGateway.POWERTAG_LINK:
             return self.__read_string(0x0012, 16, self.synthetic_slave_id, 32)
-        else:
+        elif self.type_of_gateway is TypeOfGateway.PANEL_SERVER:
             return self.__read_string(0x003C, 16, GATEWAY_SLAVE_ID, 32)
+        elif self.type_of_gateway is TypeOfGateway.SMARTLINK:
+            return "A9XMWA20"
+        else:
+            return None
 
     def product_range(self) -> str | None:
         """Product range of the gateway"""
         if self.type_of_gateway is TypeOfGateway.POWERTAG_LINK:
             return self.__read_string(0x0022, 8, self.synthetic_slave_id, 16)
-        else:
+        elif self.type_of_gateway is TypeOfGateway.PANEL_SERVER:
             return self.__read_string(0x000A, 16, GATEWAY_SLAVE_ID, 32)
+        else:
+            return "Unknown"
 
     def product_model(self) -> str | None:
         """Product model"""
         if self.type_of_gateway is TypeOfGateway.POWERTAG_LINK:
             return self.__read_string(0x002A, 8, self.synthetic_slave_id, 16)
-        else:
+        elif self.type_of_gateway is TypeOfGateway.PANEL_SERVER:
             return self.__read_string(0xF003, 16, GATEWAY_SLAVE_ID, 32)
+        else:
+            return "Smartlink SI D"
 
     def name(self) -> str | None:
         """Asset name"""
         if self.type_of_gateway is TypeOfGateway.POWERTAG_LINK:
             return self.__read_string(0x0032, 10, self.synthetic_slave_id, 20)
-        else:
+        elif self.type_of_gateway is TypeOfGateway.PANEL_SERVER:
             return self.__read_string(0x1605, 32, GATEWAY_SLAVE_ID, 64)
+        else:
+            return "Unknown"
 
     def product_vendor_url(self) -> str | None:
         """Vendor URL"""
         if self.type_of_gateway is TypeOfGateway.POWERTAG_LINK:
             return self.__read_string(0x003C, 17, self.synthetic_slave_id, 34)
-        else:
+        elif self.type_of_gateway is TypeOfGateway.PANEL_SERVER:
             return self.__read_string(0x002A, 17, GATEWAY_SLAVE_ID, 34)
+        else:
+            return "Unknown"
 
     # Wireless Configured Devices – 100 Devices
 
     def modbus_address_of_node(self, node_index: int) -> int | None:
-        if self.type_of_gateway is TypeOfGateway.POWERTAG_LINK:
+        if self.type_of_gateway is TypeOfGateway.SMARTLINK:
+            return 150 + node_index - 1
+        elif self.type_of_gateway is TypeOfGateway.POWERTAG_LINK:
             return self.__read_int_16(0x012C + node_index - 1, self.synthetic_slave_id)
         else:
             return self.__read_int_16(0x01F8 + (node_index - 1) * 5, GATEWAY_SLAVE_ID)

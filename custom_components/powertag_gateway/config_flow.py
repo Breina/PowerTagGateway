@@ -166,6 +166,7 @@ class PowerTagFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             try:
                 return await self.async_step_connect()
             except Exception as e:
+                logging.error(e)
                 self.errors["base"] = "connection_error"
 
         return self.async_show_form(
@@ -175,7 +176,11 @@ class PowerTagFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                     vol.Required(CONF_HOST, default=self.host): str,
                     vol.Required(CONF_PORT, default=self.port): cv.port,
                     vol.Required(CONF_TYPE_OF_GATEWAY, default=self.type_of_gateway):
-                        vol.In([TypeOfGateway.POWERTAG_LINK.value, TypeOfGateway.PANEL_SERVER.value])
+                        vol.In([
+                            TypeOfGateway.POWERTAG_LINK.value,
+                            TypeOfGateway.SMARTLINK.value,
+                            TypeOfGateway.PANEL_SERVER.value,
+                        ])
                 }
             ),
             errors=self.errors,
@@ -205,7 +210,7 @@ class PowerTagFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
         self.client = SchneiderModbus(self.host, type_of_gateway, self.port)
 
-        if (type_of_gateway is TypeOfGateway.POWERTAG_LINK and self.client.status() != LinkStatus.OPERATING) or (
+        if ((type_of_gateway in [TypeOfGateway.POWERTAG_LINK] or TypeOfGateway.SMARTLINK) and self.client.status() != LinkStatus.OPERATING) or (
                 type_of_gateway is TypeOfGateway.PANEL_SERVER and self.client.health() != PanelHealth.NOMINAL):
             if not self.skip_degradation_warning:
                 self.status = self.client.status() if type_of_gateway is TypeOfGateway.POWERTAG_LINK else self.client.health()

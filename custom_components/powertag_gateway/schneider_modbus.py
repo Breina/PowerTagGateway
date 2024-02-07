@@ -527,7 +527,10 @@ class SchneiderModbus:
     def tag_product_type(self, power_tag_index: int) -> ProductType | None:
         """Wireless device code type"""
         if self.type_of_gateway == TypeOfGateway.SMARTLINK:
-            identifier = self.__read_int_16(0x7930, power_tag_index)
+            try:
+                identifier = self.__read_int_16(0x7930, power_tag_index)
+            except ConnectionError:
+                return None
         else:
             identifier = self.__read_int_16(0x7937, power_tag_index)
         product_type = [p for p in ProductType if p.value[1] == identifier]

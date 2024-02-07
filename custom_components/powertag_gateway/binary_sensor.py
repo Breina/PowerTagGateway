@@ -28,7 +28,7 @@ async def async_setup_entry(
 
     gateway_device = gateway_device_info(client, presentation_url)
 
-    if client.type_of_gateway == TypeOfGateway.POWERTAG_LINK:
+    if client.type_of_gateway in [TypeOfGateway.POWERTAG_LINK, TypeOfGateway.SMARTLINK]:
         entities.append(GatewayStatus(client, gateway_device))
     else:
         entities.append(GatewayHealth(client, gateway_device))
@@ -39,6 +39,9 @@ async def async_setup_entry(
             break
 
         product_type = client.tag_product_type(modbus_address)
+        if not product_type:
+            break
+
         _LOGGER.info(f"Setting up {product_type}...")
         if not is_powertag(product_type):
             _LOGGER.warning(f"Product {product_type} is not yet supported by this integration.")

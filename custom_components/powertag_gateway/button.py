@@ -9,7 +9,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import CONF_CLIENT, DOMAIN
 from .entity_base import PowerTagEntity, gateway_device_info, tag_device_info, is_r, is_powertag
-from .schneider_modbus import SchneiderModbus
+from .schneider_modbus import SchneiderModbus, TypeOfGateway
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -36,6 +36,9 @@ async def async_setup_entry(
             break
 
         product_type = client.tag_product_type(modbus_address)
+        if not product_type:
+            break
+
         _LOGGER.info(f"Setting up {product_type}...")
         if not is_powertag(product_type):
             _LOGGER.warning(f"Product {product_type} is not yet supported by this integration.")
@@ -51,7 +54,7 @@ async def async_setup_entry(
                 _LOGGER.warning(f"The device {client.tag_name(modbus_address)} is not reachable; will ignore this one.")
                 continue
 
-        entities.append(PowerTagResetPeakDemand(client, modbus_address, tag_device))
+            entities.append(PowerTagResetPeakDemand(client, modbus_address, tag_device))
 
         class_r = is_r(product_type)
 
@@ -60,9 +63,13 @@ async def async_setup_entry(
                 PowerTagResetActiveEnergy(client, modbus_address, tag_device),
                 PowerTagResetActiveEnergyDelivered(client, modbus_address, tag_device),
                 PowerTagResetActiveEnergyReceived(client, modbus_address, tag_device),
-                PowerTagResetReactiveEnergyDelivered(client, modbus_address, tag_device),
-                PowerTagResetReactiveEnergyReceived(client, modbus_address, tag_device),
             ])
+
+            if client.type_of_gateway is not TypeOfGateway.SMARTLINK:
+                entities.extend([
+                    PowerTagResetReactiveEnergyDelivered(client, modbus_address, tag_device),
+                    PowerTagResetReactiveEnergyReceived(client, modbus_address, tag_device),
+                ])
 
     async_add_entities(entities, update_before_add=False)
 

@@ -12,7 +12,7 @@ from .const import CONF_CLIENT, DOMAIN
 from .entity_base import gateway_device_info, tag_device_info, has_neutral, \
     phase_sequence_to_phases, phase_sequence_to_line_voltages, GatewayEntity, PowerTagEntity, is_m, is_r, is_powertag
 from .schneider_modbus import SchneiderModbus, Phase, LineVoltage, PhaseSequence, PowerFactorSignConvention, \
-    TypeOfGateway
+    TypeOfGateway, ProductType
 
 PLATFORMS: list[str] = ["sensor"]
 
@@ -41,6 +41,9 @@ async def async_setup_entry(
             break
 
         product_type = client.tag_product_type(modbus_address)
+        if not product_type:
+            break
+
         _LOGGER.info(f"Setting up {product_type}...")
         if not is_powertag(product_type):
             _LOGGER.warning(f"Product {product_type} is not yet supported by this integration.")
@@ -60,7 +63,7 @@ async def async_setup_entry(
             PowerTagApparentPower(client, modbus_address, tag_device),
             PowerTagActivePower(client, modbus_address, tag_device),
             PowerTagPartialEnergy(client, modbus_address, tag_device),
-            PowerTagPowerFactor(client, modbus_address, tag_device),
+            PowerTagPowerFactor(client, modbus_address, tag_device, product_type),
             PowerTagTemperature(client, modbus_address, tag_device),
         ])
 
@@ -607,10 +610,9 @@ class PowerTagPowerFactor(PowerTagEntity, SensorEntity):
     _attr_native_unit_of_measurement = "%"
     _attr_state_class = SensorStateClass.MEASUREMENT
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, product_type: ProductType):
         super().__init__(client, modbus_index, tag_device, "power factor")
 
-        product_type = client.tag_product_type(self._modbus_index)
         if is_r(product_type):
             convention = client.tag_power_factor_sign_convention(self._modbus_index)
             if convention != PowerFactorSignConvention.INVALID:

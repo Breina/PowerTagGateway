@@ -45,10 +45,11 @@ async def async_setup_entry(
             client, modbus_address, presentation_url, next(iter(gateway_device["identifiers"]))
         )
 
-        is_disabled = client.tag_radio_lqi_gateway(modbus_address) is None
-        if is_disabled:
-            _LOGGER.warning(f"The device {client.tag_name(modbus_address)} is not reachable; will ignore this one.")
-            continue
+        if client.type_of_gateway is not TypeOfGateway.SMARTLINK:
+            is_disabled = client.tag_radio_lqi_gateway(modbus_address) is None
+            if is_disabled:
+                _LOGGER.warning(f"The device {client.tag_name(modbus_address)} is not reachable; will ignore this one.")
+                continue
 
         entities.append(PowerTagResetPeakDemand(client, modbus_address, tag_device))
 

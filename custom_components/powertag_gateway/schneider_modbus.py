@@ -508,6 +508,8 @@ class SchneiderModbus:
 
     def tag_rated_voltage(self, power_tag_index: int) -> float | None:
         """Rated voltage"""
+        if self.type_of_gateway == TypeOfGateway.SMARTLINK:
+            return None
         return self.__read_float_32(0x792B, power_tag_index)
 
     def tag_reset_peak_demands(self, power_tag_index: int):
@@ -516,13 +518,18 @@ class SchneiderModbus:
 
     def tag_power_supply_type(self, power_tag_index: int) -> Position:
         """Power supply type"""
+        if self.type_of_gateway == TypeOfGateway.SMARTLINK:
+            return Position.INVALID
         return Position(self.__read_int_16(0x792F, power_tag_index))
 
     # Device identification
 
     def tag_product_type(self, power_tag_index: int) -> ProductType | None:
         """Wireless device code type"""
-        identifier = self.__read_int_16(0x7937, power_tag_index)
+        if self.type_of_gateway == TypeOfGateway.SMARTLINK:
+            identifier = self.__read_int_16(0x7930, power_tag_index)
+        else:
+            identifier = self.__read_int_16(0x7937, power_tag_index)
         product_type = [p for p in ProductType if p.value[1] == identifier]
         return product_type[0] if product_type else None
 
@@ -540,6 +547,8 @@ class SchneiderModbus:
 
     def tag_product_code(self, power_tag_index: int) -> str | None:
         """Wireless device commercial reference"""
+        if self.type_of_gateway is TypeOfGateway.SMARTLINK:
+            return None
         return self.__read_string(0x7954, 16, power_tag_index, 32)
 
     def tag_firmware_revision(self, power_tag_index: int) -> str | None:
@@ -564,6 +573,8 @@ class SchneiderModbus:
 
     def tag_product_family(self, power_tag_index: int) -> str | None:
         """Product family"""
+        if self.type_of_gateway is TypeOfGateway.SMARTLINK:
+            return None
         return self.__read_string(0x798A, 8, power_tag_index, 16)
 
     # Diagnostic Data Registers

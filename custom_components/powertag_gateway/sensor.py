@@ -50,24 +50,29 @@ async def async_setup_entry(
             client, modbus_address, presentation_url, next(iter(gateway_device["identifiers"]))
         )
 
-        is_disabled = client.tag_radio_lqi_gateway(modbus_address) is None
-        if is_disabled:
-            _LOGGER.warning(f"The device {client.tag_name(modbus_address)} is not reachable; will ignore this one.")
-            continue
+        if client.type_of_gateway is not TypeOfGateway.SMARTLINK:
+            is_disabled = client.tag_radio_lqi_gateway(modbus_address) is None
+            if is_disabled:
+                _LOGGER.warning(f"The device {client.tag_name(modbus_address)} is not reachable; will ignore this one.")
+                continue
 
         entities.extend([
             PowerTagApparentPower(client, modbus_address, tag_device),
             PowerTagActivePower(client, modbus_address, tag_device),
             PowerTagPartialEnergy(client, modbus_address, tag_device),
             PowerTagPowerFactor(client, modbus_address, tag_device),
-            PowerTagRssiTag(client, modbus_address, tag_device),
-            PowerTagRssiGateway(client, modbus_address, tag_device),
-            PowerTagLqiTag(client, modbus_address, tag_device),
-            PowerTagLqiGateway(client, modbus_address, tag_device),
-            PowerTagPerTag(client, modbus_address, tag_device),
-            PowerTagPerGateway(client, modbus_address, tag_device),
             PowerTagTemperature(client, modbus_address, tag_device),
         ])
+
+        if client.type_of_gateway is not TypeOfGateway.SMARTLINK:
+            entities.extend([
+                PowerTagRssiTag(client, modbus_address, tag_device),
+                PowerTagRssiGateway(client, modbus_address, tag_device),
+                PowerTagLqiTag(client, modbus_address, tag_device),
+                PowerTagLqiGateway(client, modbus_address, tag_device),
+                PowerTagPerTag(client, modbus_address, tag_device),
+                PowerTagPerGateway(client, modbus_address, tag_device),
+            ])
 
         neutral = has_neutral(product_type)
 
@@ -220,9 +225,12 @@ class PowerTagVoltage(PowerTagEntity, SensorEntity):
         super().__init__(client, modbus_index, tag_device, f"voltage {line.name}")
         self.__line = line
 
-        self._attr_extra_state_attributes = {
-            "Rated voltage": client.tag_rated_voltage(modbus_index)
-        }
+        rated_voltage = client.tag_rated_voltage(modbus_index)
+
+        if rated_voltage:
+            self._attr_extra_state_attributes = {
+                "Rated voltage": rated_voltage
+            }
 
     async def async_update(self):
         self._attr_native_value = self._client.tag_voltage(self._modbus_index, self.__line)

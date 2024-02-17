@@ -40,7 +40,9 @@ async def async_setup_entry(
         if modbus_address is None:
             break
 
+        _LOGGER.info(f"Going to read product type of device {modbus_address}...")
         product_type = client.tag_product_type(modbus_address)
+        _LOGGER.info(f"Product type is {str(product_type)}")
         if not product_type:
             break
 
@@ -49,9 +51,11 @@ async def async_setup_entry(
             _LOGGER.warning(f"Product {product_type} is not yet supported by this integration.")
             continue
 
+        _LOGGER.info("Getting device info...")
         tag_device = tag_device_info(
             client, modbus_address, presentation_url, next(iter(gateway_device["identifiers"]))
         )
+        _LOGGER.info(f"Device info is {tag_device}")
 
         if client.type_of_gateway is not TypeOfGateway.SMARTLINK:
             is_disabled = client.tag_radio_lqi_gateway(modbus_address) is None
@@ -59,6 +63,7 @@ async def async_setup_entry(
                 _LOGGER.warning(f"The device {client.tag_name(modbus_address)} is not reachable; will ignore this one.")
                 continue
 
+        _LOGGER.info(f"Adding a bunch of powertag sensors...")
         entities.extend([
             PowerTagApparentPower(client, modbus_address, tag_device),
             PowerTagActivePower(client, modbus_address, tag_device),
@@ -83,16 +88,19 @@ async def async_setup_entry(
         class_r = is_r(product_type)
 
         if class_m or class_r:
+            _LOGGER.info(f"Adding class 'r' or 'm' sensors...")
             entities.extend([
                 PowerTagReactivePower(client, modbus_address, tag_device),
                 PowerTagFrequency(client, modbus_address, tag_device),
             ])
         else:
+            _LOGGER.info(f"Adding class non-'r' or 'm' sensors...")
             entities.extend([
                 PowerTagTotalActiveEnergy(client, modbus_address, tag_device),
             ])
 
         if class_r:
+            _LOGGER.info(f"Adding class non-'r' or 'm' sensors...")
             entities.extend([
                 PowerTagCurrentNeutral(client, modbus_address, tag_device),
                 PowerTagPartialActiveEnergyDelivered(client, modbus_address, tag_device),
@@ -118,17 +126,21 @@ async def async_setup_entry(
                             f"Skipping adding phase-specific entities...")
 
         for phase in phase_sequence_to_phases(phase_sequence):
+            _LOGGER.info(f"Adding phase specific current entity...")
             entities.append(PowerTagCurrent(client, modbus_address, tag_device, phase))
 
             if neutral:
+                _LOGGER.info(f"Adding phase specific power entity...")
                 entities.append(PowerTagActivePowerPerPhase(client, modbus_address, tag_device, phase))
 
             if class_m:
+                _LOGGER.info(f"Adding phase specific class 'm' entity...")
                 entities.extend([
                     PowerTagTotalActiveEnergyDeltaPerPhase(client, modbus_address, tag_device, phase),
                 ])
 
             if class_r:
+                _LOGGER.info(f"Adding phase specific class 'r' entities...")
                 entities.extend([
                     PowerTagReactivePowerPerPhase(client, modbus_address, tag_device, phase),
                     PowerTagApparentPowerPerPhase(client, modbus_address, tag_device, phase),
@@ -146,7 +158,10 @@ async def async_setup_entry(
                 ])
 
         for line_voltage in phase_sequence_to_line_voltages(phase_sequence, neutral):
+            _LOGGER.info(f"Adding phase specific line voltages...")
             entities.append(PowerTagVoltage(client, modbus_address, tag_device, line_voltage))
+
+        _LOGGER.info(f"Done with device {modbus_address}")
 
     async_add_entities(entities, update_before_add=False)
 

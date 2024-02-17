@@ -528,7 +528,7 @@ class SchneiderModbus:
         """Wireless device code type"""
         if self.type_of_gateway == TypeOfGateway.SMARTLINK:
             try:
-                identifier = self.__read_int_16(0x792F, power_tag_index)
+                identifier = self.__read_int_16(0x7930, power_tag_index)
             except ConnectionError as e:
                 logging.warning(
                     f"Could not read product type of device on slave ID {power_tag_index}: {str(e)}. "
@@ -790,8 +790,3 @@ class SchneiderModbus:
             return None
 
         return datetime(year, month, day, hour, minute, second, millisecond)
-
-try:
-    LinkStatus(232323)
-except Exception as e:
-    print(e)

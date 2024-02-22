@@ -529,6 +529,13 @@ class SchneiderModbus:
         if self.type_of_gateway == TypeOfGateway.SMARTLINK:
             try:
                 identifier = self.__read_int_16(0x7930, power_tag_index)
+                product_type = [p for p in ProductType if p.value[0] == identifier]
+                if not product_type:
+                    logging.warning(
+                        f"Unknown product type: {identifier}"
+                    )
+                    return None
+
             except ConnectionError as e:
                 logging.warning(
                     f"Could not read product type of device on slave ID {power_tag_index}: {str(e)}. "
@@ -538,7 +545,13 @@ class SchneiderModbus:
                 return None
         else:
             identifier = self.__read_int_16(0x7937, power_tag_index)
-        product_type = [p for p in ProductType if p.value[1] == identifier]
+            product_type = [p for p in ProductType if p.value[1] == identifier]
+            if not product_type:
+                logging.warning(
+                    f"Unknown product type: {identifier}"
+                )
+                return None
+
         return product_type[0] if product_type else None
 
     def tag_slave_address(self, power_tag_index: int) -> int | None:

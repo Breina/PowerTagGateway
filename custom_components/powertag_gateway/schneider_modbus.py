@@ -529,6 +529,10 @@ class SchneiderModbus:
         if self.type_of_gateway == TypeOfGateway.SMARTLINK:
             try:
                 identifier = self.__read_int_16(0x7930, power_tag_index)
+                if not identifier:
+                    logging.error("The powertag returned an error while requesting its product type")
+                    return None
+
                 product_type = [p for p in ProductType if p.value[0] == identifier]
                 if not product_type:
                     logging.warning(
@@ -760,7 +764,9 @@ class SchneiderModbus:
         return result if not math.isnan(result) else None
 
     def __read_int_16(self, address: int, slave_id: int) -> int | None:
+        logging.info(f"Reading __read_int_16 on address {address}, slave_id {slave_id}")
         result = self.decoder(self.__read(address, 1, slave_id)).decode_16bit_uint()
+        logging.info(f"The result of __read_int_16 was {result}")
         return result if result != 0xFFFF else None
 
     def __write_int_16(self, address: int, slave_id: int, value: int):

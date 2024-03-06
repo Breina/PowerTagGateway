@@ -729,6 +729,19 @@ class SchneiderModbus:
 
     # Helper functions
 
+    def round_to_significant_digits(self, number: float, significant_digits: int):
+        if number == 0:
+            return 0  # Early return to handle 0 explicitly
+        
+        # Calculate the number of digits in the integer part
+        integer_digits = int(math.floor(math.log10(abs(number)))) + 1
+        
+        # Calculate how many digits should be in the fractional part
+        fractional_digits = significant_digits - integer_digits
+        
+        # Round the number to the calculated number of fractional digits
+        return round(number, fractional_digits)
+    
     def __write(self, address: int, registers: list[int], slave_id: int):
         self.client.write_registers(address, registers, slave=slave_id)
 
@@ -761,7 +774,7 @@ class SchneiderModbus:
 
     def __read_float_32(self, address: int, slave_id: int) -> float | None:
         result = self.decoder(self.__read(address, 2, slave_id)).decode_32bit_float()
-        return result if not math.isnan(result) else None
+        return self.round_to_significant_digits(result,7) if not math.isnan(result) else None
 
     def __read_int_16(self, address: int, slave_id: int) -> int | None:
         logging.info(f"Reading __read_int_16 on address {address}, slave_id {slave_id}")

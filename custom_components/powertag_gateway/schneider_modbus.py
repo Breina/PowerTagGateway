@@ -135,7 +135,7 @@ class ProductType(enum.Enum):
     A9MEM1561 = (82, 17207, "PowerTag P63 1P+N Top")
     A9MEM1562 = (83, 17208, "PowerTag P63 1P+N Bottom")
     A9MEM1563 = (84, 17209, "PowerTag P63 1P+N Bottom")
-    A9MEM1570 = (85, 17209, "PowerTag F63 3P+N")
+    A9MEM1570 = (85, 17210, "PowerTag F63 3P+N")
     A9MEM1571 = (86, 17211, "PowerTag P63 3P+N Top")
     A9MEM1572 = (87, 17212, "PowerTag P63 3P+N Bottom")
     LV434020 = (92, 17800, "PowerTag M250 3P")

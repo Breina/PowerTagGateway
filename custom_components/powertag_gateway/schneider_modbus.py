@@ -156,6 +156,7 @@ class ProductType(enum.Enum):
     A9MEM1580 = (121, 17980, "PowerTag F160")
     A9XMWRD = (170, 9150, "PowerTag Link display")
     SMT10020 = (171, 17350, "HeatTag sensor")
+    UNKNOWN = (0x8000, 0xFFFF, "Unknown or invalid")
 
 
 class PowerFactorSignConvention(enum.Enum):
@@ -529,7 +530,7 @@ class SchneiderModbus:
         """Wireless device code type"""
         if self.type_of_gateway == TypeOfGateway.SMARTLINK:
             try:
-                identifier = self.__read_int_16(0x7930, power_tag_index)
+                identifier = self.__read_int_16(0x792F, power_tag_index)
                 if not identifier:
                     _LOGGER.error("The powertag returned an error while requesting its product type")
                     return None

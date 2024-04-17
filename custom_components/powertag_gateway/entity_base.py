@@ -90,7 +90,7 @@ class FeatureClass(Enum):
     M1 = [ProductType.LV434021]
     M2 = [ProductType.LV434022]
     M3 = [ProductType.LV434023]
-    R1 = [ProductType.A9MEM1590, ProductType.A9MEM1591, ProductType.A9MEM1592, ProductType.A9MEM1593]
+    R1 = [ProductType.A9MEM1590, ProductType.A9MEM1591, ProductType.A9MEM1592, ProductType.A9MEM1593, ProductType.A9MEM1590_bis]
 
 
 def is_powertag(product_type: ProductType):

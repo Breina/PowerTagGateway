@@ -152,6 +152,7 @@ class ProductType(enum.Enum):
     A9MEM1591 = (105, 17970, "PowerTag R600")
     A9MEM1592 = (106, 17971, "PowerTag R1000")
     A9MEM1593 = (107, 17972, "PowerTag R2000")
+    A9MEM1590_bis = (999, 17973, " A9MEM1590 R200 3P 3P+N") # TODO check issue https://github.com/Breina/PowerTagGateway/issues/19
     A9MEM1580 = (121, 17980, "PowerTag F160")
     A9XMWRD = (170, 9150, "PowerTag Link display")
     SMT10020 = (171, 17350, "HeatTag sensor")

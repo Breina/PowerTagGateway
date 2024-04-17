@@ -11,7 +11,7 @@ from pymodbus.pdu import ExceptionResponse
 GATEWAY_SLAVE_ID = 255
 SYNTHESIS_TABLE_SLAVE_ID_START = 247
 
-log = logging.getLogger(__name__)
+_LOGGER = logging.getLogger(__name__)
 
 
 class Phase(enum.Enum):
@@ -178,7 +178,7 @@ class TypeOfGateway(enum.Enum):
 
 class SchneiderModbus:
     def __init__(self, host, type_of_gateway: TypeOfGateway, port=502, timeout=5):
-        log.info(f"Connecting Modbus TCP to {host}:{port}")
+        _LOGGER.info(f"Connecting Modbus TCP to {host}:{port}")
         self.client = ModbusTcpClient(host, port, timeout=timeout)
         self.client.connect()
         self.type_of_gateway = type_of_gateway
@@ -230,7 +230,7 @@ class SchneiderModbus:
         try:
             return LinkStatus(bitmap)
         except Exception as e:
-            logging.error(f"Could not map status, defaulting to GENERAL_FAILURE ({str(e)}")
+            _LOGGER.error(f"Could not map status, defaulting to GENERAL_FAILURE ({str(e)}")
             return LinkStatus.GENERAL_FAILURE
 
     def health(self) -> PanelHealth:
@@ -530,18 +530,18 @@ class SchneiderModbus:
             try:
                 identifier = self.__read_int_16(0x7930, power_tag_index)
                 if not identifier:
-                    logging.error("The powertag returned an error while requesting its product type")
+                    _LOGGER.error("The powertag returned an error while requesting its product type")
                     return None
 
                 product_type = [p for p in ProductType if p.value[0] == identifier]
                 if not product_type:
-                    logging.warning(
+                    _LOGGER.warning(
                         f"Unknown product type: {identifier}"
                     )
                     return None
 
             except ConnectionError as e:
-                logging.warning(
+                _LOGGER.warning(
                     f"Could not read product type of device on slave ID {power_tag_index}: {str(e)}. "
                     f"Might be because there's device, or an actual error. Either way we're stopping the search.",
                     exc_info=True
@@ -551,7 +551,7 @@ class SchneiderModbus:
             identifier = self.__read_int_16(0x7937, power_tag_index)
             product_type = [p for p in ProductType if p.value[1] == identifier]
             if not product_type:
-                logging.warning(
+                _LOGGER.warning(
                     f"Unknown product type: {identifier}"
                 )
                 return None
@@ -732,16 +732,16 @@ class SchneiderModbus:
     def round_to_significant_digits(self, number: float, significant_digits: int):
         if number == 0:
             return 0  # Early return to handle 0 explicitly
-        
+
         # Calculate the number of digits in the integer part
         integer_digits = int(math.floor(math.log10(abs(number)))) + 1
-        
+
         # Calculate how many digits should be in the fractional part
         fractional_digits = significant_digits - integer_digits
-        
+
         # Round the number to the calculated number of fractional digits
         return round(number, fractional_digits)
-    
+
     def __write(self, address: int, registers: list[int], slave_id: int):
         self.client.write_registers(address, registers, slave=slave_id)
 
@@ -774,12 +774,12 @@ class SchneiderModbus:
 
     def __read_float_32(self, address: int, slave_id: int) -> float | None:
         result = self.decoder(self.__read(address, 2, slave_id)).decode_32bit_float()
-        return self.round_to_significant_digits(result,7) if not math.isnan(result) else None
+        return self.round_to_significant_digits(result, 7) if not math.isnan(result) else None
 
     def __read_int_16(self, address: int, slave_id: int) -> int | None:
-        logging.info(f"Reading __read_int_16 on address {address}, slave_id {slave_id}")
+        _LOGGER.info(f"Reading __read_int_16 on address {address}, slave_id {slave_id}")
         result = self.decoder(self.__read(address, 1, slave_id)).decode_16bit_uint()
-        logging.info(f"The result of __read_int_16 was {result}")
+        _LOGGER.info(f"The result of __read_int_16 was {result}")
         return result if result != 0xFFFF else None
 
     def __write_int_16(self, address: int, slave_id: int, value: int):

@@ -401,7 +401,7 @@ class PowerTagPartialActiveEnergyDeliveredPerPhase(PowerTagEntity, SensorEntity)
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
 
     def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, phase: Phase):
-        super().__init__(client, modbus_index, tag_device, "partial active energy delivered phase {phase}")
+        super().__init__(client, modbus_index, tag_device, f"partial active energy delivered phase {phase}")
         self.__phase = phase
 
     async def async_update(self):
@@ -416,7 +416,7 @@ class PowerTagTotalActiveEnergyDeliveredPerPhase(PowerTagEntity, SensorEntity):
     _attr_state_class = SensorStateClass.TOTAL
 
     def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, phase: Phase):
-        super().__init__(client, modbus_index, tag_device, "total active energy delivered phase {phase}")
+        super().__init__(client, modbus_index, tag_device, f"total active energy delivered phase {phase}")
         self.__phase = phase
 
     async def async_update(self):
@@ -429,7 +429,7 @@ class PowerTagPartialActiveEnergyReceivedPerPhase(PowerTagEntity, SensorEntity):
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
 
     def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, phase: Phase):
-        super().__init__(client, modbus_index, tag_device, "partial active energy received phase {phase}")
+        super().__init__(client, modbus_index, tag_device, f"partial active energy received phase {phase}")
         self.__phase = phase
 
     async def async_update(self):
@@ -444,7 +444,7 @@ class PowerTagTotalActiveEnergyReceivedPerPhase(PowerTagEntity, SensorEntity):
     _attr_state_class = SensorStateClass.TOTAL
 
     def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, phase: Phase):
-        super().__init__(client, modbus_index, tag_device, "total active energy received phase {phase}")
+        super().__init__(client, modbus_index, tag_device, f"total active energy received phase {phase}")
         self.__phase = phase
 
     async def async_update(self):
@@ -505,7 +505,7 @@ class PowerTagPartialReactiveEnergyDeliveredPerPhase(PowerTagEntity, SensorEntit
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
 
     def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, phase: Phase):
-        super().__init__(client, modbus_index, tag_device, "partial reactive energy delivered phase {phase}")
+        super().__init__(client, modbus_index, tag_device, f"partial reactive energy delivered phase {phase}")
         self.__phase = phase
 
     async def async_update(self):
@@ -520,7 +520,7 @@ class PowerTagTotalReactiveEnergyDeliveredPerPhase(PowerTagEntity, SensorEntity)
     _attr_state_class = SensorStateClass.TOTAL
 
     def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, phase: Phase):
-        super().__init__(client, modbus_index, tag_device, "total reactive energy delivered phase {phase}")
+        super().__init__(client, modbus_index, tag_device, f"total reactive energy delivered phase {phase}")
         self.__phase = phase
 
     async def async_update(self):
@@ -534,7 +534,7 @@ class PowerTagPartialReactiveEnergyReceivedPerPhase(PowerTagEntity, SensorEntity
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
 
     def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, phase: Phase):
-        super().__init__(client, modbus_index, tag_device, "partial reactive energy received phase {phase}")
+        super().__init__(client, modbus_index, tag_device, f"partial reactive energy received phase {phase}")
         self.__phase = phase
 
     async def async_update(self):
@@ -549,7 +549,7 @@ class PowerTagTotalReactiveEnergyReceivedPerPhase(PowerTagEntity, SensorEntity):
     _attr_state_class = SensorStateClass.TOTAL
 
     def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, phase: Phase):
-        super().__init__(client, modbus_index, tag_device, "total reactive energy received phase {phase}")
+        super().__init__(client, modbus_index, tag_device, f"total reactive energy received phase {phase}")
         self.__phase = phase
 
     async def async_update(self):
@@ -587,7 +587,7 @@ class PowerTagPartialApparentEnergyPerPhase(PowerTagEntity, SensorEntity):
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
 
     def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, phase: Phase):
-        super().__init__(client, modbus_index, tag_device, "partial apparent energy phase {phase}")
+        super().__init__(client, modbus_index, tag_device, f"partial apparent energy phase {phase}")
         self.__phase = phase
 
     async def async_update(self):
@@ -600,7 +600,7 @@ class PowerTagTotalApparentEnergyPerPhase(PowerTagEntity, SensorEntity):
     _attr_state_class = SensorStateClass.TOTAL
 
     def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, phase: Phase):
-        super().__init__(client, modbus_index, tag_device, "total apparent energy phase {phase}")
+        super().__init__(client, modbus_index, tag_device, f"total apparent energy phase {phase}")
         self.__phase = phase
 
     async def async_update(self):

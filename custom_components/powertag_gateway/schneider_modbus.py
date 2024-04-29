@@ -532,7 +532,7 @@ class SchneiderModbus:
         """Wireless device code type"""
         if self.type_of_gateway == TypeOfGateway.SMARTLINK:
             try:
-                identifier = self.__read_int_16(0x792F, power_tag_index)
+                identifier = self.__read_int_16(0x7930, power_tag_index)
                 if not identifier:
                     _LOGGER.error("The powertag returned an error while requesting its product type")
                     return None
@@ -750,6 +750,7 @@ class SchneiderModbus:
         self.client.write_registers(address, registers, slave=slave_id)
 
     def __read(self, address: int, count: int, slave_id: int):
+        self.client.read_
         response = self.client.read_holding_registers(address, count, slave=slave_id)
         if isinstance(response, ExceptionResponse):
             raise ConnectionError(str(response))

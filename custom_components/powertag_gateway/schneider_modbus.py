@@ -750,7 +750,6 @@ class SchneiderModbus:
         self.client.write_registers(address, registers, slave=slave_id)
 
     def __read(self, address: int, count: int, slave_id: int):
-        self.client.read_
         response = self.client.read_holding_registers(address, count, slave=slave_id)
         if isinstance(response, ExceptionResponse):
             raise ConnectionError(str(response))

@@ -7,11 +7,21 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory, DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import CONF_CLIENT, DOMAIN
-from .entity_base import PowerTagEntity, tag_device_info, gateway_device_info, GatewayEntity, is_powertag
+from . import CONF_CLIENT, DOMAIN
+from .entity_base import PowerTagEntity, GatewayEntity, setup_entities, gateway_device_info
+from .powertag_features import FeatureClass
 from .schneider_modbus import SchneiderModbus, LinkStatus, PanelHealth, TypeOfGateway
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def list_binary_sensors() -> list[type[PowerTagEntity]]:
+    return [
+        PowerTagWirelessCommunicationValid,
+        PowerTagRadioCommunicationValid,
+        PowerTagAlarmValid,
+        PowerTagGetAlarm
+    ]
 
 
 async def async_setup_entry(
@@ -19,50 +29,18 @@ async def async_setup_entry(
 ) -> None:
     """Set up PowerTag Link Gateway from a config entry."""
 
+    binary_sensors = list_binary_sensors()
+    entities = setup_entities(hass, config_entry, binary_sensors)
+
     data = hass.data[DOMAIN][config_entry.entry_id]
-
-    client = data[CONF_CLIENT]
     presentation_url = data[CONF_INTERNAL_URL]
-
-    entities = []
-
+    client = data[CONF_CLIENT]
     gateway_device = gateway_device_info(client, presentation_url)
 
-    if client.type_of_gateway in [TypeOfGateway.POWERTAG_LINK, TypeOfGateway.SMARTLINK]:
-        entities.append(GatewayStatus(client, gateway_device))
-    else:
-        entities.append(GatewayHealth(client, gateway_device))
-
-    for i in range(1, 100):
-        modbus_address = client.modbus_address_of_node(i)
-        if modbus_address is None:
-            break
-
-        product_type = client.tag_product_type(modbus_address)
-        if not product_type:
-            break
-
-        _LOGGER.info(f"Setting up {product_type}...")
-        if not is_powertag(product_type):
-            _LOGGER.warning(f"Product {product_type} is not yet supported by this integration.")
-            continue
-
-        tag_device = tag_device_info(
-            client, modbus_address, presentation_url, next(iter(gateway_device["identifiers"]))
-        )
-
-        if client.type_of_gateway is not TypeOfGateway.SMARTLINK:
-            is_disabled = client.tag_radio_lqi_gateway(modbus_address) is None
-            if is_disabled:
-                _LOGGER.warning(f"The device {client.tag_name(modbus_address)} is not reachable; will ignore this one.")
-                continue
-
-        entities.extend([
-            PowerTagWirelessCommunicationValid(client, modbus_address, tag_device),
-            PowerTagRadioCommunicationValid(client, modbus_address, tag_device),
-            PowerTagAlarmValid(client, modbus_address, tag_device),
-            PowerTagGetAlarm(client, modbus_address, tag_device)
-        ])
+    entities.extend([gateway_entity for gateway_entity
+                     in [GatewayStatus(client, gateway_device), GatewayHealth(client, gateway_device)]
+                     if gateway_entity.supports_gateway(client.type_of_gateway)
+                     ])
 
     async_add_entities(entities, update_before_add=False)
 
@@ -77,6 +55,16 @@ class PowerTagWirelessCommunicationValid(PowerTagEntity, BinarySensorEntity):
     async def async_update(self):
         self._attr_is_on = self._client.tag_wireless_communication_valid(self._modbus_index)
 
+    @staticmethod
+    def supports_feature_set(feature_class: FeatureClass) -> bool:
+        return feature_class in [FeatureClass.A1, FeatureClass.A2, FeatureClass.P1, FeatureClass.F1, FeatureClass.F2,
+                                 FeatureClass.F3, FeatureClass.FL, FeatureClass.M0, FeatureClass.M1, FeatureClass.M2,
+                                 FeatureClass.M3, FeatureClass.R1, FeatureClass.C]
+
+    @staticmethod
+    def supports_gateway(type_of_gateway: TypeOfGateway):
+        return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
+
 
 class PowerTagRadioCommunicationValid(PowerTagEntity, BinarySensorEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
@@ -88,6 +76,16 @@ class PowerTagRadioCommunicationValid(PowerTagEntity, BinarySensorEntity):
     async def async_update(self):
         self._attr_is_on = self._client.tag_radio_communication_valid(self._modbus_index)
 
+    @staticmethod
+    def supports_feature_set(feature_class: FeatureClass) -> bool:
+        return feature_class in [FeatureClass.A1, FeatureClass.A2, FeatureClass.P1, FeatureClass.F1, FeatureClass.F2,
+                                 FeatureClass.F3, FeatureClass.FL, FeatureClass.M0, FeatureClass.M1, FeatureClass.M2,
+                                 FeatureClass.M3, FeatureClass.R1, FeatureClass.C]
+
+    @staticmethod
+    def supports_gateway(type_of_gateway: TypeOfGateway):
+        return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
+
 
 class PowerTagAlarmValid(PowerTagEntity, BinarySensorEntity):
     _attr_device_class = BinarySensorDeviceClass.PROBLEM
@@ -97,6 +95,16 @@ class PowerTagAlarmValid(PowerTagEntity, BinarySensorEntity):
 
     async def async_update(self):
         self._attr_is_on = not self._client.tag_is_alarm_valid(self._modbus_index)
+
+    @staticmethod
+    def supports_feature_set(feature_class: FeatureClass) -> bool:
+        return feature_class in [FeatureClass.A1, FeatureClass.A2, FeatureClass.P1, FeatureClass.F1, FeatureClass.F2,
+                                 FeatureClass.F3, FeatureClass.FL, FeatureClass.M0, FeatureClass.M1, FeatureClass.M2,
+                                 FeatureClass.M3, FeatureClass.R1, FeatureClass.C]
+
+    @staticmethod
+    def supports_gateway(type_of_gateway: TypeOfGateway):
+        return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
 class PowerTagGetAlarm(PowerTagEntity, BinarySensorEntity):
@@ -126,6 +134,16 @@ class PowerTagGetAlarm(PowerTagEntity, BinarySensorEntity):
                 "Device replacement": alarm.alarm_heattag_replacement
             }
 
+    @staticmethod
+    def supports_feature_set(feature_class: FeatureClass) -> bool:
+        return feature_class in [FeatureClass.A1, FeatureClass.A2, FeatureClass.P1, FeatureClass.F1, FeatureClass.F2,
+                                 FeatureClass.F3, FeatureClass.FL, FeatureClass.M0, FeatureClass.M1, FeatureClass.M2,
+                                 FeatureClass.M3, FeatureClass.R1, FeatureClass.C]
+
+    @staticmethod
+    def supports_gateway(type_of_gateway: TypeOfGateway):
+        return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
+
 
 class GatewayStatus(GatewayEntity, BinarySensorEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
@@ -149,6 +167,16 @@ class GatewayStatus(GatewayEntity, BinarySensorEntity):
             LinkStatus.GENERAL_FAILURE: "General failure"
         }[status]
 
+    @staticmethod
+    def supports_feature_set(feature_class: FeatureClass) -> bool:
+        return feature_class in [FeatureClass.A1, FeatureClass.A2, FeatureClass.P1, FeatureClass.F1, FeatureClass.F2,
+                                 FeatureClass.F3, FeatureClass.FL, FeatureClass.M0, FeatureClass.M1, FeatureClass.M2,
+                                 FeatureClass.M3, FeatureClass.R1, FeatureClass.C]
+
+    @staticmethod
+    def supports_gateway(type_of_gateway: TypeOfGateway):
+        return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK]
+
 
 class GatewayHealth(GatewayEntity, BinarySensorEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
@@ -167,3 +195,13 @@ class GatewayHealth(GatewayEntity, BinarySensorEntity):
             PanelHealth.DEGRADED: "Degraded",
             PanelHealth.OUT_OF_ORDER: "Out of order"
         }[status]
+
+    @staticmethod
+    def supports_feature_set(feature_class: FeatureClass) -> bool:
+        return feature_class in [FeatureClass.A1, FeatureClass.A2, FeatureClass.P1, FeatureClass.F1, FeatureClass.F2,
+                                 FeatureClass.F3, FeatureClass.FL, FeatureClass.M0, FeatureClass.M1, FeatureClass.M2,
+                                 FeatureClass.M3, FeatureClass.R1, FeatureClass.C]
+
+    @staticmethod
+    def supports_gateway(type_of_gateway: TypeOfGateway):
+        return type_of_gateway in [TypeOfGateway.PANEL_SERVER]

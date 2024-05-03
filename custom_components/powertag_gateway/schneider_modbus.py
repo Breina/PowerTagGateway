@@ -4,7 +4,7 @@ import math
 from datetime import datetime
 
 from pymodbus.client import ModbusTcpClient
-from pymodbus.constants import Endian
+from pymodbus.constants import Endian, DeviceInformation
 from pymodbus.payload import BinaryPayloadDecoder, BinaryPayloadBuilder
 from pymodbus.pdu import ExceptionResponse
 
@@ -153,8 +153,6 @@ class ProductType(enum.Enum):
     A9MEM1591 = (105, 17970, "PowerTag R600")
     A9MEM1592 = (106, 17971, "PowerTag R1000")
     A9MEM1593 = (107, 17972, "PowerTag R2000")
-    A9MEM1590_bis = (
-    999, 17973, " A9MEM1590 R200 3P 3P+N")  # TODO check issue https://github.com/Breina/PowerTagGateway/issues/19
     A9MEM1580 = (121, 17980, "PowerTag F160")
     A9XMWRD = (170, 9150, "PowerTag Link display")
     SMT10020 = (171, 17350, "HeatTag sensor")
@@ -528,6 +526,16 @@ class SchneiderModbus:
 
     # Device identification
 
+    def tag_device_identification(self, power_tag_index: int):
+        return self.__identify(power_tag_index)
+
+    def tag_product_identifier(self, power_tag_index: int) -> int | None:
+        """Wireless device code type"""
+        if self.type_of_gateway == TypeOfGateway.SMARTLINK:
+            return self.__read_int_16(0x7930, power_tag_index)
+
+        raise NotImplementedError()
+
     def tag_product_type(self, power_tag_index: int) -> ProductType | None:
         """Wireless device code type"""
         if self.type_of_gateway == TypeOfGateway.SMARTLINK:
@@ -755,6 +763,16 @@ class SchneiderModbus:
             raise ConnectionError(str(response))
         return response.registers
 
+    def __identify(self, slave_id: int):
+        # data = self.client.read_device_information(read_code=DeviceInformation.REGULAR, slave=0xFF)
+        for i in range(0xFF):
+            try:
+                response = self.client.read_device_information(read_code=DeviceInformation.REGULAR, slave=i)
+                print(f"Yes {i}: {response}")
+            except ExceptionResponse as e:
+                print(f"Not {i}: {e}")
+        # return self.client.read_device_information(read_code=DeviceInformation.REGULAR, slave=slave_id)
+
     @staticmethod
     def decoder(registers):
         return BinaryPayloadDecoder.fromRegisters(
@@ -781,9 +799,7 @@ class SchneiderModbus:
         return self.round_to_significant_digits(result, 7) if not math.isnan(result) else None
 
     def __read_int_16(self, address: int, slave_id: int) -> int | None:
-        _LOGGER.info(f"Reading __read_int_16 on address {address}, slave_id {slave_id}")
         result = self.decoder(self.__read(address, 1, slave_id)).decode_16bit_uint()
-        _LOGGER.info(f"The result of __read_int_16 was {result}")
         return result if result != 0xFFFF else None
 
     def __write_int_16(self, address: int, slave_id: int, value: int):

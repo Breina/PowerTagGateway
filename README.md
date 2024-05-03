@@ -22,6 +22,7 @@ This will enable monitor electric circuits in great detail.
 
 ### Gateways
 
+* A9XMWA20: Acti 9 Smartlink SI D
 * A9XMWD20: Acti9 PowerTag Link
 * A9XMWD100: Acti9 PowerTag Link HD
 * PAS400: EcoStruxure Panel Server - entry - 110-277 VAC/DC
@@ -31,48 +32,15 @@ This will enable monitor electric circuits in great detail.
 * PAS800L: EcoStruxure Panel Server - advanced datalogger - 24 VDC
 * PAS800P: EcoStruxure Panel Server - advanced datalogger - PEO
 
-### PowerTags
+### Wireless Devices
 
-* A9MEM1520: PowerTag Monoconnect 63A 1P+Wire top and bottom
-* A9MEM1521: PowerTag Monoconnect 63A 1P+N top position
-* A9MEM1522: PowerTag Monoconnect 63A 1P+N bottom position
-* A9MEM1540: PowerTag Monoconnect 63A 3P top and bottom position
-* A9MEM1541: PowerTag Monoconnect 63A 3P+N top position
-* A9MEM1542: PowerTag Monoconnect 63A 3P+N bottom position
-* A9MEM1543: PowerTag Monoconnect 230V LL 63A 3P top and bottom position
-* A9MEM1560: PowerTag Flex 230V 63A 1P+N top and bottom position
-* A9MEM1561: PowerTag phaseNeutral 63A 1P+N top position
-* A9MEM1562: PowerTag phaseNeutral 63A 1P+N bottom position
-* A9MEM1563: PowerTag PhaseNeutral 63A 1P+N bottom position for RCBO 18mm Slim
-* A9MEM1564: PowerTag Flex 110V 63A 1P+N top and bottom position
-* A9MEM1570: PowerTag Flex 63A 3P+N top and bottom position
-* A9MEM1571: PowerTag phaseNeutral 63A 3P+N top position
-* A9MEM1572: PowerTag phaseNeutral 63A 3P+N bottom position
-* A9MEM1573: PowerTag Flex 63A 3P top and bottom position
-* A9MEM1574: PowerTag Flex 127/220V 63A 3P+N top and bottom position
-* A9MEM1580: PowerTag Flex 160A 3P/3P+N top and bottom position
-* A9MEM1590: PowerTag Rope 200A 3P/3P+N top and bottom position
-* A9MEM1591: PowerTag Rope 600A 3P/3P+N top and bottom position
-* A9MEM1592: PowerTag Rope 1000A 3P/3P+N top and bottom position
-* A9MEM1593: PowerTag Rope 2000A 3P/3P+N top and bottom position
-* LV434020: PowerTag NSX - 250 A - 3P
-* LV434021: PowerTag NSX - 250 A - 3P+N
-* LV434022: PowerTag NSX - 630 A - 3P
-* LV434023: PowerTag NSX - 630 A - 3P+N
+* All PowerTags
+* Acti9 Active
+* ZBRTT1 (soon)
 
 #### Further integrations
 
-> **Warning**
->
-> The following PowerTags are not yet supported, but are compatible with the Link Gateway.
-> If integration is desired, please [create an issue](https://github.com/Breina/PowerTagGateway/issues) requesting it as an additional feature.
-> 
-> As it is not practical to integrate a device one doesn't have, consider sending the PowerTag to a maintainer of this project.
-
-* A9XMC1D3, A9XMC2D3
-* A9XMWRD
-* SMT10020
-
+If there's something you're missing, please create a GitHub issue. 
 
 # Installation
 
@@ -98,6 +66,14 @@ To make your life easier later, it's also recommended to enable the _DISCOVERY_ 
 ![The IP services configuration](images/Web_config.png)
 
 _The IP services configuration_
+
+### SmartLink
+
+Follow the same steps as for PowerTag Link.
+
+> [!IMPORTANT]  
+> In addition, SmartLink users need to configure the modbus addresses of their wireless devices 
+> from 150 upwards to 169 without skipping one.
 
 ### Panel Server
 

@@ -1,6 +1,9 @@
 # EcoStruxure PowerTag Link Gateway
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Default-41BDF5.svg)](https://github.com/hacs/integration)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/Breina/PowerTagGateway/validate.yaml)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/Breina/PowerTagGateway/hassfest.yaml)
+
 
 An integration to fully integrate Schneider's PowerTag ecosystem into Home Assistant.
 This will enable monitor electric circuits in great detail.

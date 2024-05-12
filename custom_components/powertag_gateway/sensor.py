@@ -276,7 +276,6 @@ class PowerTagPartialActiveEnergyDelivered(WirelessDeviceEntity, SensorEntity):
 
     async def async_update(self):
         self._attr_native_value = self._client.tag_energy_active_delivered_partial(self._modbus_index)
-        self._attr_last_reset = self._client.tag_load_operating_time_start(self._modbus_index)
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -324,7 +323,6 @@ class PowerTagPartialActiveEnergyDeliveredPerPhase(WirelessDeviceEntity, SensorE
         self._attr_native_value = self._client.tag_energy_active_delivered_partial_phase(
             self._modbus_index, self.__phase
         )
-        self._attr_last_reset = self._client.tag_load_operating_time_start(self._modbus_index)
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -380,7 +378,6 @@ class PowerTagPartialActiveEnergyReceived(WirelessDeviceEntity, SensorEntity):
 
     async def async_update(self):
         self._attr_native_value = self._client.tag_energy_active_received_partial(self._modbus_index)
-        self._attr_last_reset = self._client.tag_load_operating_time_start(self._modbus_index)
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -428,7 +425,6 @@ class PowerTagPartialActiveEnergyReceivedPerPhase(WirelessDeviceEntity, SensorEn
         self._attr_native_value = self._client.tag_energy_active_received_partial_phase(
             self._modbus_index, self.__phase
         )
-        self._attr_last_reset = self._client.tag_load_operating_time_start(self._modbus_index)
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:

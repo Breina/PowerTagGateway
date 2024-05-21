@@ -15,6 +15,7 @@ This will enable monitor electric circuits in great detail.
 * **Power**: active, apparent and power factor
 * **Energy**: partial (resettable) and total
 * **Demand**: active power, maximum active power (resettable) and timestamp of maximum active power
+* **Environment**: Temperature, humidity and CO2
 * **Alarm**: current state and its reasons
 * **Diagnostics**: gateway status, LQI, RSSI, packet loss, connectivity status
 
@@ -39,7 +40,7 @@ This will enable monitor electric circuits in great detail.
 
 * All PowerTags
 * Acti9 Active
-* ZBRTT1 (soon)
+* All environment sensors (not HeatTag)
 
 #### Further integrations
 

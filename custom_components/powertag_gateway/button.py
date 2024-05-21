@@ -6,14 +6,14 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .entity_base import PowerTagEntity, setup_entities
-from .powertag_features import FeatureClass
+from .entity_base import WirelessDeviceEntity, setup_entities
+from .device_features import FeatureClass
 from .schneider_modbus import SchneiderModbus, TypeOfGateway
 
 _LOGGER = logging.getLogger(__name__)
 
 
-def list_buttons() -> list[type[PowerTagEntity]]:
+def list_buttons() -> list[type[WirelessDeviceEntity]]:
     return [
         PowerTagResetPeakDemand,
         PowerTagResetActiveEnergy,
@@ -34,7 +34,7 @@ async def async_setup_entry(
     async_add_entities(entities, update_before_add=False)
 
 
-class PowerTagResetPeakDemand(PowerTagEntity, ButtonEntity):
+class PowerTagResetPeakDemand(WirelessDeviceEntity, ButtonEntity):
     def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
         super().__init__(client, modbus_index, tag_device, "reset peak demand")
 
@@ -58,7 +58,7 @@ class PowerTagResetPeakDemand(PowerTagEntity, ButtonEntity):
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagResetActiveEnergy(PowerTagEntity, ButtonEntity):
+class PowerTagResetActiveEnergy(WirelessDeviceEntity, ButtonEntity):
     def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
         super().__init__(client, modbus_index, tag_device, "reset active energy")
 
@@ -80,7 +80,7 @@ class PowerTagResetActiveEnergy(PowerTagEntity, ButtonEntity):
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagResetActiveEnergyDelivered(PowerTagEntity, ButtonEntity):
+class PowerTagResetActiveEnergyDelivered(WirelessDeviceEntity, ButtonEntity):
     def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
         super().__init__(client, modbus_index, tag_device, "reset active energy delivered")
 
@@ -102,7 +102,7 @@ class PowerTagResetActiveEnergyDelivered(PowerTagEntity, ButtonEntity):
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagResetActiveEnergyReceived(PowerTagEntity, ButtonEntity):
+class PowerTagResetActiveEnergyReceived(WirelessDeviceEntity, ButtonEntity):
     def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
         super().__init__(client, modbus_index, tag_device, "reset active energy received")
 
@@ -124,7 +124,7 @@ class PowerTagResetActiveEnergyReceived(PowerTagEntity, ButtonEntity):
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagResetReactiveEnergyDelivered(PowerTagEntity, ButtonEntity):
+class PowerTagResetReactiveEnergyDelivered(WirelessDeviceEntity, ButtonEntity):
     def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
         super().__init__(client, modbus_index, tag_device, "reset reactive energy delivered")
 
@@ -148,7 +148,7 @@ class PowerTagResetReactiveEnergyDelivered(PowerTagEntity, ButtonEntity):
         return type_of_gateway in [TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagResetReactiveEnergyReceived(PowerTagEntity, ButtonEntity):
+class PowerTagResetReactiveEnergyReceived(WirelessDeviceEntity, ButtonEntity):
     def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
         super().__init__(client, modbus_index, tag_device, "reset reactive energy received")
 

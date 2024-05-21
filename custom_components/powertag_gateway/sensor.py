@@ -9,8 +9,8 @@ from homeassistant.helpers.entity import EntityCategory, DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import CONF_CLIENT, DOMAIN
-from .entity_base import GatewayEntity, PowerTagEntity, setup_entities, gateway_device_info
-from .powertag_features import FeatureClass
+from .device_features import FeatureClass
+from .entity_base import GatewayEntity, WirelessDeviceEntity, setup_entities, gateway_device_info
 from .schneider_modbus import SchneiderModbus, Phase, LineVoltage, PowerFactorSignConvention, \
     TypeOfGateway
 
@@ -19,7 +19,7 @@ PLATFORMS: list[str] = ["sensor"]
 _LOGGER = logging.getLogger(__name__)
 
 
-def list_sensors() -> list[type[PowerTagEntity]]:
+def list_sensors() -> list[type[WirelessDeviceEntity]]:
     return [
         PowerTagTotalActiveEnergy,
         PowerTagTotalActiveEnergyPerPhase,
@@ -60,12 +60,16 @@ def list_sensors() -> list[type[PowerTagEntity]]:
         PowerTagActivePower,
         PowerTagActivePowerPerPhase,
         PowerTagDemandActivePower,
-        PowerTagRssiTag,
-        PowerTagRssiGateway,
-        PowerTagLqiTag,
-        PowerTagLqiGateway,
-        PowerTagPerTag,
-        PowerTagPerGateway
+        EnvTagBatteryVoltage,
+        EnvTagTemperature,
+        EnvTagHumidity,
+        EnvTagCO2,
+        DeviceRssiTag,
+        DeviceRssiGateway,
+        DeviceLqiTag,
+        DeviceLqiGateway,
+        DevicePerTag,
+        DevicePerGateway,
     ]
 
 
@@ -102,7 +106,7 @@ class GatewayTime(GatewayEntity, SensorEntity):
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagTotalActiveEnergy(PowerTagEntity, SensorEntity):
+class PowerTagTotalActiveEnergy(WirelessDeviceEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.ENERGY
     _attr_native_unit_of_measurement = "Wh"
     _attr_state_class = SensorStateClass.TOTAL
@@ -124,7 +128,7 @@ class PowerTagTotalActiveEnergy(PowerTagEntity, SensorEntity):
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagTotalActiveEnergyPerPhase(PowerTagEntity, SensorEntity):
+class PowerTagTotalActiveEnergyPerPhase(WirelessDeviceEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.ENERGY
     _attr_native_unit_of_measurement = "Wh"
     _attr_state_class = SensorStateClass.TOTAL
@@ -147,7 +151,7 @@ class PowerTagTotalActiveEnergyPerPhase(PowerTagEntity, SensorEntity):
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagReactivePower(PowerTagEntity, SensorEntity):
+class PowerTagReactivePower(WirelessDeviceEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.REACTIVE_POWER
     _attr_native_unit_of_measurement = "var"
     _attr_state_class = SensorStateClass.MEASUREMENT
@@ -168,7 +172,7 @@ class PowerTagReactivePower(PowerTagEntity, SensorEntity):
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagReactivePowerPerPhase(PowerTagEntity, SensorEntity):
+class PowerTagReactivePowerPerPhase(WirelessDeviceEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.REACTIVE_POWER
     _attr_native_unit_of_measurement = "var"
     _attr_state_class = SensorStateClass.MEASUREMENT
@@ -189,7 +193,7 @@ class PowerTagReactivePowerPerPhase(PowerTagEntity, SensorEntity):
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagApparentPower(PowerTagEntity, SensorEntity):
+class PowerTagApparentPower(WirelessDeviceEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.APPARENT_POWER
     _attr_native_unit_of_measurement = "VA"
     _attr_state_class = SensorStateClass.MEASUREMENT
@@ -211,7 +215,7 @@ class PowerTagApparentPower(PowerTagEntity, SensorEntity):
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagApparentPowerPerPhase(PowerTagEntity, SensorEntity):
+class PowerTagApparentPowerPerPhase(WirelessDeviceEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.APPARENT_POWER
     _attr_native_unit_of_measurement = "VA"
     _attr_state_class = SensorStateClass.MEASUREMENT
@@ -232,7 +236,7 @@ class PowerTagApparentPowerPerPhase(PowerTagEntity, SensorEntity):
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagPowerFactor(PowerTagEntity, SensorEntity):
+class PowerTagPowerFactor(WirelessDeviceEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.POWER_FACTOR
     _attr_native_unit_of_measurement = "%"
     _attr_state_class = SensorStateClass.MEASUREMENT
@@ -261,7 +265,7 @@ class PowerTagPowerFactor(PowerTagEntity, SensorEntity):
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagPowerFactorPerPhase(PowerTagEntity, SensorEntity):
+class PowerTagPowerFactorPerPhase(WirelessDeviceEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.POWER_FACTOR
     _attr_native_unit_of_measurement = "%"
     _attr_state_class = SensorStateClass.MEASUREMENT
@@ -288,7 +292,7 @@ class PowerTagPowerFactorPerPhase(PowerTagEntity, SensorEntity):
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagPartialActiveEnergyDelivered(PowerTagEntity, SensorEntity):
+class PowerTagPartialActiveEnergyDelivered(WirelessDeviceEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.ENERGY
     _attr_native_unit_of_measurement = "Wh"
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
@@ -311,7 +315,7 @@ class PowerTagPartialActiveEnergyDelivered(PowerTagEntity, SensorEntity):
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagTotalActiveEnergyDelivered(PowerTagEntity, SensorEntity):
+class PowerTagTotalActiveEnergyDelivered(WirelessDeviceEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.ENERGY
     _attr_native_unit_of_measurement = "Wh"
     _attr_state_class = SensorStateClass.TOTAL
@@ -333,7 +337,7 @@ class PowerTagTotalActiveEnergyDelivered(PowerTagEntity, SensorEntity):
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagPartialActiveEnergyDeliveredPerPhase(PowerTagEntity, SensorEntity):
+class PowerTagPartialActiveEnergyDeliveredPerPhase(WirelessDeviceEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.ENERGY
     _attr_native_unit_of_measurement = "Wh"
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
@@ -357,7 +361,7 @@ class PowerTagPartialActiveEnergyDeliveredPerPhase(PowerTagEntity, SensorEntity)
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagTotalActiveEnergyDeliveredPerPhase(PowerTagEntity, SensorEntity):
+class PowerTagTotalActiveEnergyDeliveredPerPhase(WirelessDeviceEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.ENERGY
     _attr_native_unit_of_measurement = "Wh"
     _attr_state_class = SensorStateClass.TOTAL
@@ -378,7 +382,7 @@ class PowerTagTotalActiveEnergyDeliveredPerPhase(PowerTagEntity, SensorEntity):
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagPartialActiveEnergyReceived(PowerTagEntity, SensorEntity):
+class PowerTagPartialActiveEnergyReceived(WirelessDeviceEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.ENERGY
     _attr_native_unit_of_measurement = "Wh"
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
@@ -401,7 +405,7 @@ class PowerTagPartialActiveEnergyReceived(PowerTagEntity, SensorEntity):
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagTotalActiveEnergyReceived(PowerTagEntity, SensorEntity):
+class PowerTagTotalActiveEnergyReceived(WirelessDeviceEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.ENERGY
     _attr_native_unit_of_measurement = "Wh"
     _attr_state_class = SensorStateClass.TOTAL
@@ -423,7 +427,7 @@ class PowerTagTotalActiveEnergyReceived(PowerTagEntity, SensorEntity):
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagPartialActiveEnergyReceivedPerPhase(PowerTagEntity, SensorEntity):
+class PowerTagPartialActiveEnergyReceivedPerPhase(WirelessDeviceEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.ENERGY
     _attr_native_unit_of_measurement = "Wh"
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
@@ -447,7 +451,7 @@ class PowerTagPartialActiveEnergyReceivedPerPhase(PowerTagEntity, SensorEntity):
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagTotalActiveEnergyReceivedPerPhase(PowerTagEntity, SensorEntity):
+class PowerTagTotalActiveEnergyReceivedPerPhase(WirelessDeviceEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.ENERGY
     _attr_native_unit_of_measurement = "Wh"
     _attr_state_class = SensorStateClass.TOTAL
@@ -468,7 +472,7 @@ class PowerTagTotalActiveEnergyReceivedPerPhase(PowerTagEntity, SensorEntity):
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagPartialActiveEnergyDeliveredAndReceived(PowerTagEntity, SensorEntity):
+class PowerTagPartialActiveEnergyDeliveredAndReceived(WirelessDeviceEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.ENERGY
     _attr_native_unit_of_measurement = "Wh"
     _attr_state_class = SensorStateClass.TOTAL
@@ -490,7 +494,7 @@ class PowerTagPartialActiveEnergyDeliveredAndReceived(PowerTagEntity, SensorEnti
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagTotalActiveEnergyDeliveredAndReceived(PowerTagEntity, SensorEntity):
+class PowerTagTotalActiveEnergyDeliveredAndReceived(WirelessDeviceEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.ENERGY
     _attr_native_unit_of_measurement = "Wh"
     _attr_state_class = SensorStateClass.TOTAL
@@ -536,7 +540,7 @@ class PowerTagTotalActiveEnergyDeliveredAndReceived(PowerTagEntity, SensorEntity
 #         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagPartialReactiveEnergyDelivered(PowerTagEntity, SensorEntity):
+class PowerTagPartialReactiveEnergyDelivered(WirelessDeviceEntity, SensorEntity):
     # TODO lobby for Reactive-energy
     _attr_device_class = SensorDeviceClass.ENERGY
     _attr_native_unit_of_measurement = "VARh"
@@ -558,7 +562,7 @@ class PowerTagPartialReactiveEnergyDelivered(PowerTagEntity, SensorEntity):
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagTotalReactiveEnergyDelivered(PowerTagEntity, SensorEntity):
+class PowerTagTotalReactiveEnergyDelivered(WirelessDeviceEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.ENERGY
     _attr_native_unit_of_measurement = "VARh"
     _attr_state_class = SensorStateClass.TOTAL
@@ -578,7 +582,7 @@ class PowerTagTotalReactiveEnergyDelivered(PowerTagEntity, SensorEntity):
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagPartialReactiveEnergyDeliveredPerPhase(PowerTagEntity, SensorEntity):
+class PowerTagPartialReactiveEnergyDeliveredPerPhase(WirelessDeviceEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.ENERGY
     _attr_native_unit_of_measurement = "VARh"
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
@@ -601,7 +605,7 @@ class PowerTagPartialReactiveEnergyDeliveredPerPhase(PowerTagEntity, SensorEntit
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagTotalReactiveEnergyDeliveredPerPhase(PowerTagEntity, SensorEntity):
+class PowerTagTotalReactiveEnergyDeliveredPerPhase(WirelessDeviceEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.ENERGY
     _attr_native_unit_of_measurement = "VARh"
     _attr_state_class = SensorStateClass.TOTAL
@@ -624,7 +628,7 @@ class PowerTagTotalReactiveEnergyDeliveredPerPhase(PowerTagEntity, SensorEntity)
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagPartialReactiveEnergyReceived(PowerTagEntity, SensorEntity):
+class PowerTagPartialReactiveEnergyReceived(WirelessDeviceEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.ENERGY
     _attr_native_unit_of_measurement = "VARh"
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
@@ -645,7 +649,7 @@ class PowerTagPartialReactiveEnergyReceived(PowerTagEntity, SensorEntity):
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagTotalReactiveEnergyReceived(PowerTagEntity, SensorEntity):
+class PowerTagTotalReactiveEnergyReceived(WirelessDeviceEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.ENERGY
     _attr_native_unit_of_measurement = "VARh"
     _attr_state_class = SensorStateClass.TOTAL
@@ -665,7 +669,7 @@ class PowerTagTotalReactiveEnergyReceived(PowerTagEntity, SensorEntity):
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagPartialReactiveEnergyReceivedPerPhase(PowerTagEntity, SensorEntity):
+class PowerTagPartialReactiveEnergyReceivedPerPhase(WirelessDeviceEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.ENERGY
     _attr_native_unit_of_measurement = "VARh"
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
@@ -688,7 +692,7 @@ class PowerTagPartialReactiveEnergyReceivedPerPhase(PowerTagEntity, SensorEntity
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagTotalReactiveEnergyReceivedPerPhase(PowerTagEntity, SensorEntity):
+class PowerTagTotalReactiveEnergyReceivedPerPhase(WirelessDeviceEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.ENERGY
     _attr_native_unit_of_measurement = "VARh"
     _attr_state_class = SensorStateClass.TOTAL
@@ -711,7 +715,7 @@ class PowerTagTotalReactiveEnergyReceivedPerPhase(PowerTagEntity, SensorEntity):
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagPartialApparentEnergy(PowerTagEntity, SensorEntity):
+class PowerTagPartialApparentEnergy(WirelessDeviceEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.ENERGY
     _attr_native_unit_of_measurement = "VAh"
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
@@ -731,7 +735,7 @@ class PowerTagPartialApparentEnergy(PowerTagEntity, SensorEntity):
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagTotalApparentEnergy(PowerTagEntity, SensorEntity):
+class PowerTagTotalApparentEnergy(WirelessDeviceEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.ENERGY
     _attr_native_unit_of_measurement = "VAh"
     _attr_state_class = SensorStateClass.TOTAL
@@ -751,7 +755,7 @@ class PowerTagTotalApparentEnergy(PowerTagEntity, SensorEntity):
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagPartialApparentEnergyPerPhase(PowerTagEntity, SensorEntity):
+class PowerTagPartialApparentEnergyPerPhase(WirelessDeviceEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.ENERGY
     _attr_native_unit_of_measurement = "VAh"
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
@@ -772,7 +776,7 @@ class PowerTagPartialApparentEnergyPerPhase(PowerTagEntity, SensorEntity):
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagTotalApparentEnergyPerPhase(PowerTagEntity, SensorEntity):
+class PowerTagTotalApparentEnergyPerPhase(WirelessDeviceEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.ENERGY
     _attr_native_unit_of_measurement = "VAh"
     _attr_state_class = SensorStateClass.TOTAL
@@ -793,7 +797,7 @@ class PowerTagTotalApparentEnergyPerPhase(PowerTagEntity, SensorEntity):
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagCurrent(PowerTagEntity, SensorEntity):
+class PowerTagCurrent(WirelessDeviceEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.CURRENT
     _attr_native_unit_of_measurement = "A"
     _attr_state_class = SensorStateClass.MEASUREMENT
@@ -820,7 +824,7 @@ class PowerTagCurrent(PowerTagEntity, SensorEntity):
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagCurrentNeutral(PowerTagEntity, SensorEntity):
+class PowerTagCurrentNeutral(WirelessDeviceEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.CURRENT
     _attr_native_unit_of_measurement = "A"
     _attr_state_class = SensorStateClass.MEASUREMENT
@@ -844,7 +848,7 @@ class PowerTagCurrentNeutral(PowerTagEntity, SensorEntity):
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagVoltage(PowerTagEntity, SensorEntity):
+class PowerTagVoltage(WirelessDeviceEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.VOLTAGE
     _attr_native_unit_of_measurement = "V"
     _attr_state_class = SensorStateClass.MEASUREMENT
@@ -874,7 +878,7 @@ class PowerTagVoltage(PowerTagEntity, SensorEntity):
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagFrequency(PowerTagEntity, SensorEntity):
+class PowerTagFrequency(WirelessDeviceEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.FREQUENCY
     _attr_native_unit_of_measurement = "Hz"
     _attr_state_class = SensorStateClass.MEASUREMENT
@@ -895,7 +899,7 @@ class PowerTagFrequency(PowerTagEntity, SensorEntity):
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagTemperature(PowerTagEntity, SensorEntity):
+class PowerTagTemperature(WirelessDeviceEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.TEMPERATURE
     _attr_native_unit_of_measurement = "C"
     _attr_state_class = SensorStateClass.MEASUREMENT
@@ -921,7 +925,7 @@ class PowerTagTemperature(PowerTagEntity, SensorEntity):
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagActivePower(PowerTagEntity, SensorEntity):
+class PowerTagActivePower(WirelessDeviceEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.POWER
     _attr_native_unit_of_measurement = "W"
     _attr_state_class = SensorStateClass.MEASUREMENT
@@ -943,7 +947,7 @@ class PowerTagActivePower(PowerTagEntity, SensorEntity):
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagActivePowerPerPhase(PowerTagEntity, SensorEntity):
+class PowerTagActivePowerPerPhase(WirelessDeviceEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.POWER
     _attr_native_unit_of_measurement = "W"
     _attr_state_class = SensorStateClass.MEASUREMENT
@@ -966,7 +970,7 @@ class PowerTagActivePowerPerPhase(PowerTagEntity, SensorEntity):
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagDemandActivePower(PowerTagEntity, SensorEntity):
+class PowerTagDemandActivePower(WirelessDeviceEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.POWER
     _attr_native_unit_of_measurement = "W"
     _attr_state_class = SensorStateClass.MEASUREMENT
@@ -992,7 +996,96 @@ class PowerTagDemandActivePower(PowerTagEntity, SensorEntity):
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagRssiTag(PowerTagEntity, SensorEntity):
+class EnvTagBatteryVoltage(WirelessDeviceEntity, SensorEntity):
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_device_class = SensorDeviceClass.VOLTAGE
+    _attr_native_unit_of_measurement = "V"
+    _attr_state_class = SensorStateClass.MEASUREMENT
+
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
+        super().__init__(client, modbus_index, tag_device, "battery voltage")
+
+    async def async_update(self):
+        self._attr_native_value = self._client.env_battery_voltage(self._modbus_index)
+
+    @staticmethod
+    def supports_feature_set(feature_class: FeatureClass) -> bool:
+        return feature_class in [FeatureClass.TEMP1, FeatureClass.CO2]
+
+    @staticmethod
+    def supports_gateway(type_of_gateway: TypeOfGateway):
+        return type_of_gateway in [TypeOfGateway.PANEL_SERVER]
+
+
+class EnvTagTemperature(WirelessDeviceEntity, SensorEntity):
+    _attr_device_class = SensorDeviceClass.TEMPERATURE
+    _attr_native_unit_of_measurement = "°C"
+    _attr_state_class = SensorStateClass.MEASUREMENT
+
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
+        super().__init__(client, modbus_index, tag_device, "temperature")
+        self._attr_extra_state_attributes = {
+            "Minimum measurable temperature (°C)": client.env_temperature_minimum(modbus_index),
+            "Maximum measurable temperature (°C)": client.env_temperature_maximum(modbus_index)
+        }
+
+    async def async_update(self):
+        self._attr_native_value = self._client.env_temperature(self._modbus_index)
+
+    @staticmethod
+    def supports_feature_set(feature_class: FeatureClass) -> bool:
+        return feature_class in [FeatureClass.TEMP0, FeatureClass.TEMP1, FeatureClass.CO2]
+
+    @staticmethod
+    def supports_gateway(type_of_gateway: TypeOfGateway):
+        return type_of_gateway in [TypeOfGateway.PANEL_SERVER]
+
+
+class EnvTagHumidity(WirelessDeviceEntity, SensorEntity):
+    _attr_device_class = SensorDeviceClass.HUMIDITY
+    _attr_native_unit_of_measurement = "%"
+    _attr_state_class = SensorStateClass.MEASUREMENT
+
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
+        super().__init__(client, modbus_index, tag_device, "humidity")
+        self._attr_extra_state_attributes = {
+            "Minimum measurable humidity (%)": client.env_humidity_minimum(modbus_index),
+            "Maximum measurable humidity (%)": client.env_humidity_maximum(modbus_index)
+        }
+
+    async def async_update(self):
+        self._attr_native_value = self._client.env_humidity(self._modbus_index)
+
+    @staticmethod
+    def supports_feature_set(feature_class: FeatureClass) -> bool:
+        return feature_class in [FeatureClass.TEMP1, FeatureClass.CO2]
+
+    @staticmethod
+    def supports_gateway(type_of_gateway: TypeOfGateway):
+        return type_of_gateway in [TypeOfGateway.PANEL_SERVER]
+
+
+class EnvTagCO2(WirelessDeviceEntity, SensorEntity):
+    _attr_device_class = SensorDeviceClass.CO2
+    _attr_native_unit_of_measurement = "ppm"
+    _attr_state_class = SensorStateClass.MEASUREMENT
+
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
+        super().__init__(client, modbus_index, tag_device, "CO2")
+
+    async def async_update(self):
+        self._attr_native_value = self._client.env_co2(self._modbus_index) * 1000
+
+    @staticmethod
+    def supports_feature_set(feature_class: FeatureClass) -> bool:
+        return feature_class in [FeatureClass.CO2]
+
+    @staticmethod
+    def supports_gateway(type_of_gateway: TypeOfGateway):
+        return type_of_gateway in [TypeOfGateway.PANEL_SERVER]
+
+
+class DeviceRssiTag(WirelessDeviceEntity, SensorEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_device_class = SensorDeviceClass.SIGNAL_STRENGTH
     _attr_native_unit_of_measurement = "dBm"
@@ -1011,14 +1104,15 @@ class PowerTagRssiTag(PowerTagEntity, SensorEntity):
     def supports_feature_set(feature_class: FeatureClass) -> bool:
         return feature_class in [FeatureClass.A1, FeatureClass.A2, FeatureClass.P1, FeatureClass.F1, FeatureClass.F2,
                                  FeatureClass.F3, FeatureClass.FL, FeatureClass.M0, FeatureClass.M1, FeatureClass.M2,
-                                 FeatureClass.M3, FeatureClass.R1, FeatureClass.C]
+                                 FeatureClass.M3, FeatureClass.R1, FeatureClass.C,
+                                 FeatureClass.TEMP0, FeatureClass.TEMP1, FeatureClass.CO2]
 
     @staticmethod
     def supports_gateway(type_of_gateway: TypeOfGateway):
         return type_of_gateway in [TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagRssiGateway(PowerTagEntity, SensorEntity):
+class DeviceRssiGateway(WirelessDeviceEntity, SensorEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_device_class = SensorDeviceClass.SIGNAL_STRENGTH
     _attr_native_unit_of_measurement = "dBm"
@@ -1037,14 +1131,15 @@ class PowerTagRssiGateway(PowerTagEntity, SensorEntity):
     def supports_feature_set(feature_class: FeatureClass) -> bool:
         return feature_class in [FeatureClass.A1, FeatureClass.A2, FeatureClass.P1, FeatureClass.F1, FeatureClass.F2,
                                  FeatureClass.F3, FeatureClass.FL, FeatureClass.M0, FeatureClass.M1, FeatureClass.M2,
-                                 FeatureClass.M3, FeatureClass.R1, FeatureClass.C]
+                                 FeatureClass.M3, FeatureClass.R1, FeatureClass.C,
+                                 FeatureClass.TEMP0, FeatureClass.TEMP1, FeatureClass.CO2]
 
     @staticmethod
     def supports_gateway(type_of_gateway: TypeOfGateway):
         return type_of_gateway in [TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagLqiTag(PowerTagEntity, SensorEntity):
+class DeviceLqiTag(WirelessDeviceEntity, SensorEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_state_class = SensorStateClass.MEASUREMENT
 
@@ -1061,14 +1156,15 @@ class PowerTagLqiTag(PowerTagEntity, SensorEntity):
     def supports_feature_set(feature_class: FeatureClass) -> bool:
         return feature_class in [FeatureClass.A1, FeatureClass.A2, FeatureClass.P1, FeatureClass.F1, FeatureClass.F2,
                                  FeatureClass.F3, FeatureClass.FL, FeatureClass.M0, FeatureClass.M1, FeatureClass.M2,
-                                 FeatureClass.M3, FeatureClass.R1, FeatureClass.C]
+                                 FeatureClass.M3, FeatureClass.R1, FeatureClass.C,
+                                 FeatureClass.TEMP0, FeatureClass.TEMP1, FeatureClass.CO2]
 
     @staticmethod
     def supports_gateway(type_of_gateway: TypeOfGateway):
         return type_of_gateway in [TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagLqiGateway(PowerTagEntity, SensorEntity):
+class DeviceLqiGateway(WirelessDeviceEntity, SensorEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_state_class = SensorStateClass.MEASUREMENT
 
@@ -1085,14 +1181,15 @@ class PowerTagLqiGateway(PowerTagEntity, SensorEntity):
     def supports_feature_set(feature_class: FeatureClass) -> bool:
         return feature_class in [FeatureClass.A1, FeatureClass.A2, FeatureClass.P1, FeatureClass.F1, FeatureClass.F2,
                                  FeatureClass.F3, FeatureClass.FL, FeatureClass.M0, FeatureClass.M1, FeatureClass.M2,
-                                 FeatureClass.M3, FeatureClass.R1, FeatureClass.C]
+                                 FeatureClass.M3, FeatureClass.R1, FeatureClass.C,
+                                 FeatureClass.TEMP0, FeatureClass.TEMP1, FeatureClass.CO2]
 
     @staticmethod
     def supports_gateway(type_of_gateway: TypeOfGateway):
         return type_of_gateway in [TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagPerTag(PowerTagEntity, SensorEntity):
+class DevicePerTag(WirelessDeviceEntity, SensorEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_state_class = SensorStateClass.MEASUREMENT
 
@@ -1109,14 +1206,15 @@ class PowerTagPerTag(PowerTagEntity, SensorEntity):
     def supports_feature_set(feature_class: FeatureClass) -> bool:
         return feature_class in [FeatureClass.A1, FeatureClass.A2, FeatureClass.P1, FeatureClass.F1, FeatureClass.F2,
                                  FeatureClass.F3, FeatureClass.FL, FeatureClass.M0, FeatureClass.M1, FeatureClass.M2,
-                                 FeatureClass.M3, FeatureClass.R1, FeatureClass.C]
+                                 FeatureClass.M3, FeatureClass.R1, FeatureClass.C,
+                                 FeatureClass.TEMP0, FeatureClass.TEMP1, FeatureClass.CO2]
 
     @staticmethod
     def supports_gateway(type_of_gateway: TypeOfGateway):
         return type_of_gateway in [TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
-class PowerTagPerGateway(PowerTagEntity, SensorEntity):
+class DevicePerGateway(WirelessDeviceEntity, SensorEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_state_class = SensorStateClass.MEASUREMENT
 
@@ -1133,7 +1231,8 @@ class PowerTagPerGateway(PowerTagEntity, SensorEntity):
     def supports_feature_set(feature_class: FeatureClass) -> bool:
         return feature_class in [FeatureClass.A1, FeatureClass.A2, FeatureClass.P1, FeatureClass.F1, FeatureClass.F2,
                                  FeatureClass.F3, FeatureClass.FL, FeatureClass.M0, FeatureClass.M1, FeatureClass.M2,
-                                 FeatureClass.M3, FeatureClass.R1, FeatureClass.C]
+                                 FeatureClass.M3, FeatureClass.R1, FeatureClass.C,
+                                 FeatureClass.TEMP0, FeatureClass.TEMP1, FeatureClass.CO2]
 
     @staticmethod
     def supports_gateway(type_of_gateway: TypeOfGateway):

@@ -18,6 +18,9 @@ class FeatureClass(Enum):
     M3 = auto()
     R1 = auto()
     C = auto()
+    TEMP0 = auto
+    TEMP1 = auto()
+    CO2 = auto()
 
 
 class UnknownDevice(IntegrationError):
@@ -38,7 +41,10 @@ def from_commercial_reference(commercial_reference: str) -> FeatureClass:
         '^LV434022$': FeatureClass.M2,
         '^LV434023$': FeatureClass.M3,
         '^A9MEM1590|A9MEM1591|A9MEM1592|A9MEM1593|PLTR.$': FeatureClass.R1,
-        '^A9TAA....|A9TAB....|A9TDEC...|A9TDFC...|A9TDFD...|A9TPDD...|A9TPED...|A9TYAE...|A9TYBE...$': FeatureClass.C
+        '^A9TAA....|A9TAB....|A9TDEC...|A9TDFC...|A9TDFD...|A9TPDD...|A9TPED...|A9TYAE...|A9TYBE...$': FeatureClass.C,
+        '^EMS59440$': FeatureClass.TEMP0,
+        '^SED-TRH-G-5045|ZBRTT1|ESST010B0400|A9XST114|EMS59443$': FeatureClass.TEMP1,
+        '^SED-CO2-G-5045$': FeatureClass.CO2
     }.items():
         if re.match(regex, commercial_reference):
             return result

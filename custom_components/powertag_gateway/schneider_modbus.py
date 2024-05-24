@@ -543,7 +543,7 @@ class SchneiderModbus:
 
             except ConnectionError as e:
                 _LOGGER.warning(
-                    f"Could not read product type of device on slave ID {power_tag_index}: {str(e)}. "
+                    f"Could not read product type of device on slave ID {tag_index}: {str(e)}. "
                     f"Might be because there's device, or an actual error. Either way we're stopping the search.",
                     exc_info=True
                 )
@@ -890,3 +890,7 @@ class SchneiderModbus:
             return None
 
         return datetime(year, month, day, hour, minute, second, millisecond)
+
+
+client = SchneiderModbus("pries.frituur", type_of_gateway=TypeOfGateway.SMARTLINK)
+print(client.tag_product_identifier(150))

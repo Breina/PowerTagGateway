@@ -185,6 +185,9 @@ def setup_entities(hass: HomeAssistant, config_entry: ConfigEntry, powertag_enti
 
         if client.type_of_gateway == TypeOfGateway.SMARTLINK:
             identifier = client.tag_product_identifier(modbus_address)
+            if identifier is None:
+                break
+
             _LOGGER.debug(f"Found device #{modbus_address} to have product wireless device type code {identifier}")
 
             try:

@@ -538,7 +538,16 @@ class SchneiderModbus:
     def tag_product_identifier(self, tag_index: int) -> int | None:
         """Wireless device code type"""
         if self.type_of_gateway == TypeOfGateway.SMARTLINK:
-            return self.__read_int_16(0x7930, tag_index)
+            try:
+                return self.__read_int_16(0x7930, tag_index)
+
+            except ConnectionError as e:
+                _LOGGER.warning(
+                    f"Could not read product type of device on slave ID {power_tag_index}: {str(e)}. "
+                    f"Might be because there's device, or an actual error. Either way we're stopping the search.",
+                    exc_info=True
+                )
+                return None
 
         raise NotImplementedError()
 

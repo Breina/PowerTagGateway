@@ -890,7 +890,3 @@ class SchneiderModbus:
             return None
 
         return datetime(year, month, day, hour, minute, second, millisecond)
-
-
-client = SchneiderModbus("pries.frituur", type_of_gateway=TypeOfGateway.SMARTLINK)
-print(client.tag_product_identifier(150))

@@ -19,6 +19,9 @@ class Phase(enum.Enum):
     B = 2
     C = 4
 
+    def __str__(self):
+        return self.name
+
 
 class LineVoltage(enum.Enum):
     A_B = 0

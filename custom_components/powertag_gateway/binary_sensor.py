@@ -63,7 +63,7 @@ class PowerTagWirelessCommunicationValid(WirelessDeviceEntity, BinarySensorEntit
                                  FeatureClass.TEMP0, FeatureClass.TEMP1, FeatureClass.CO2]
 
     @staticmethod
-    def supports_gateway(type_of_gateway: TypeOfGateway):
+    def supports_gateway(type_of_gateway: TypeOfGateway) -> bool:
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
@@ -85,7 +85,7 @@ class PowerTagRadioCommunicationValid(WirelessDeviceEntity, BinarySensorEntity):
                                  FeatureClass.TEMP0, FeatureClass.TEMP1, FeatureClass.CO2]
 
     @staticmethod
-    def supports_gateway(type_of_gateway: TypeOfGateway):
+    def supports_gateway(type_of_gateway: TypeOfGateway) -> bool:
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
@@ -119,7 +119,7 @@ class PowerTagAlarm(WirelessDeviceEntity, BinarySensorEntity):
                                  FeatureClass.M3, FeatureClass.R1, FeatureClass.C]
 
     @staticmethod
-    def supports_gateway(type_of_gateway: TypeOfGateway):
+    def supports_gateway(type_of_gateway: TypeOfGateway) -> bool:
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
@@ -139,7 +139,7 @@ class AmbientTagAlarm(WirelessDeviceEntity, BinarySensorEntity):
         return feature_class in [FeatureClass.TEMP1, FeatureClass.CO2]
 
     @staticmethod
-    def supports_gateway(type_of_gateway: TypeOfGateway):
+    def supports_gateway(type_of_gateway: TypeOfGateway) -> bool:
         return type_of_gateway in [TypeOfGateway.PANEL_SERVER]
 
 
@@ -172,7 +172,7 @@ class GatewayStatus(GatewayEntity, BinarySensorEntity):
                                  FeatureClass.M3, FeatureClass.R1, FeatureClass.C]
 
     @staticmethod
-    def supports_gateway(type_of_gateway: TypeOfGateway):
+    def supports_gateway(type_of_gateway: TypeOfGateway) -> bool:
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK]
 
 
@@ -201,5 +201,5 @@ class GatewayHealth(GatewayEntity, BinarySensorEntity):
                                  FeatureClass.M3, FeatureClass.R1, FeatureClass.C]
 
     @staticmethod
-    def supports_gateway(type_of_gateway: TypeOfGateway):
+    def supports_gateway(type_of_gateway: TypeOfGateway) -> bool:
         return type_of_gateway in [TypeOfGateway.PANEL_SERVER]

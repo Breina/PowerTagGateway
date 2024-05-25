@@ -327,35 +327,59 @@ class SchneiderModbus:
         """Total active energy delivered + received (not resettable)"""
         return self.__read_int_64(0xC83, tag_index)
 
-    def tag_energy_active_delta(self, tag_index: int, phase: Phase) -> int | None:
-        """Active energy on phase delivered - received (not resettable)"""
-        return self.__read_int_64(0xC8F + phase.value * 2, tag_index)
-
     def tag_energy_active_delivered_plus_received_partial(self, tag_index: int) -> int | None:
         """Partial active energy delivered + received (resettable)"""
         return self.__read_int_64(0xCB7, tag_index)
 
-    def tag_reset_energy_active_partial(self, tag_index: int):
-        """Set partial active energy counter. The value returns to zero by PowerTag Link gateway"""
-        self.__write_int_64(0xCBB, tag_index, 1)
+    # Energy Data – New Zone
 
     def tag_reset_energy_active_delivered_partial(self, tag_index: int):
         """Set partial active energy delivered counter. The value returns to zero by PowerTag Link gateway"""
-        self.__write_int_64(0xCC3, tag_index, 1)
+        if self.type_of_gateway == TypeOfGateway.PANEL_SERVER:
+            self.__write_int_64(0x1390, tag_index, 0)  # All
+            self.__write_int_64(0x13B8, tag_index, 0)  # Phase A
+            self.__write_int_64(0x13E0, tag_index, 0)  # Phase B
+            self.__write_int_64(0x1408, tag_index, 0)  # Phase C
+        else:
+            self.__write_int_64(0xCC3, tag_index, 0)
 
     def tag_reset_energy_active_received_partial(self, tag_index: int):
         """Set partial active energy received counter. The value returns to zero by PowerTag Link gateway."""
-        self.__write_int_64(0xCCB, tag_index, 1)
+        if self.type_of_gateway == TypeOfGateway.PANEL_SERVER:
+            self.__write_int_64(0x1398, tag_index, 0)  # All
+            self.__write_int_64(0x13C0, tag_index, 0)  # Phase A
+            self.__write_int_64(0x13E8, tag_index, 0)  # Phase B
+            self.__write_int_64(0x1410, tag_index, 0)  # Phase C
+        else:
+            self.__write_int_64(0xCCB, tag_index, 0)
 
     def tag_reset_energy_reactive_delivered_partial(self, tag_index: int):
         """Set partial reactive energy delivered counter. The value returns to zero by PowerTag Link gateway."""
-        self.__write_int_64(0xCD3, tag_index, 1)
+        if self.type_of_gateway == TypeOfGateway.PANEL_SERVER:
+            self.__write_int_64(0x1438, tag_index, 0)  # All
+            self.__write_int_64(0x1470, tag_index, 0)  # Phase A
+            self.__write_int_64(0x1498, tag_index, 0)  # Phase B
+            self.__write_int_64(0x14C0, tag_index, 0)  # Phase C
+        else:
+            self.__write_int_64(0xCD3, tag_index, 0)
 
     def tag_reset_energy_reactive_received_partial(self, tag_index: int):
         """Set partial reactive energy received counter. The value returns to zero by PowerTag Link gateway."""
-        self.__write_int_64(0xCDB, tag_index, 1)
+        if self.type_of_gateway == TypeOfGateway.PANEL_SERVER:
+            self.__write_int_64(0x1448, tag_index, 0)  # All
+            self.__write_int_64(0x1478, tag_index, 0)  # Phase A
+            self.__write_int_64(0x14A0, tag_index, 0)  # Phase B
+            self.__write_int_64(0x14C8, tag_index, 0)  # Phase C
+        else:
+            self.__write_int_64(0xCDB, tag_index, 0)
 
-    # Energy Data – New Zone
+    def tag_reset_energy_apparent_partial(self, tag_index: int):
+        """Set partial apparent energy counter. The value returns to zero by PowerTag Link gateway."""
+        assert self.type_of_gateway == TypeOfGateway.PANEL_SERVER
+        self.__write_int_64(0x14F4, tag_index, 0)  # All
+        self.__write_int_64(0x150C, tag_index, 0)  # Phase A
+        self.__write_int_64(0x1534, tag_index, 0)  # Phase B
+        self.__write_int_64(0x155C, tag_index, 0)  # Phase C
 
     def tag_energy_active_delivered_partial(self, tag_index: int) -> int | None:
         """Active energy delivered (resettable)"""

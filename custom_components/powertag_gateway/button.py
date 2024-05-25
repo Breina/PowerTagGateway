@@ -6,8 +6,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .entity_base import WirelessDeviceEntity, setup_entities
 from .device_features import FeatureClass
+from .entity_base import WirelessDeviceEntity, setup_entities
 from .schneider_modbus import SchneiderModbus, TypeOfGateway
 
 _LOGGER = logging.getLogger(__name__)
@@ -16,11 +16,11 @@ _LOGGER = logging.getLogger(__name__)
 def list_buttons() -> list[type[WirelessDeviceEntity]]:
     return [
         PowerTagResetPeakDemand,
-        PowerTagResetActiveEnergy,
         PowerTagResetActiveEnergyDelivered,
         PowerTagResetActiveEnergyReceived,
         PowerTagResetReactiveEnergyDelivered,
-        PowerTagResetReactiveEnergyReceived
+        PowerTagResetReactiveEnergyReceived,
+        PowerTagResetApparentEnergy
     ]
 
 
@@ -49,34 +49,10 @@ class PowerTagResetPeakDemand(WirelessDeviceEntity, ButtonEntity):
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
-        return feature_class in [FeatureClass.A1, FeatureClass.A2, FeatureClass.P1, FeatureClass.F1, FeatureClass.F2,
-                                 FeatureClass.F3, FeatureClass.FL, FeatureClass.M0, FeatureClass.M1, FeatureClass.M2,
-                                 FeatureClass.M3, FeatureClass.R1, FeatureClass.C]
+        return feature_class in [FeatureClass.C]
 
     @staticmethod
-    def supports_gateway(type_of_gateway: TypeOfGateway):
-        return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
-
-
-class PowerTagResetActiveEnergy(WirelessDeviceEntity, ButtonEntity):
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
-        super().__init__(client, modbus_index, tag_device, "reset active energy")
-
-    def press(self) -> None:
-        self.reset()
-
-    async def async_press(self) -> None:
-        self.reset()
-
-    def reset(self):
-        self._client.tag_reset_energy_active_partial(self._modbus_index)
-
-    @staticmethod
-    def supports_feature_set(feature_class: FeatureClass) -> bool:
-        return feature_class in [FeatureClass.FL, FeatureClass.R1]
-
-    @staticmethod
-    def supports_gateway(type_of_gateway: TypeOfGateway):
+    def supports_gateway(type_of_gateway: TypeOfGateway) -> bool:
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
@@ -95,10 +71,12 @@ class PowerTagResetActiveEnergyDelivered(WirelessDeviceEntity, ButtonEntity):
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
-        return feature_class in [FeatureClass.FL, FeatureClass.R1]
+        return feature_class in [FeatureClass.A1, FeatureClass.F1 , FeatureClass.F3, FeatureClass.FL,
+                                 FeatureClass.M0, FeatureClass.M1, FeatureClass.M2, FeatureClass.M3,
+                                 FeatureClass.R1]
 
     @staticmethod
-    def supports_gateway(type_of_gateway: TypeOfGateway):
+    def supports_gateway(type_of_gateway: TypeOfGateway) -> bool:
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
@@ -117,10 +95,12 @@ class PowerTagResetActiveEnergyReceived(WirelessDeviceEntity, ButtonEntity):
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
-        return feature_class in [FeatureClass.FL, FeatureClass.R1]
+        return feature_class in [FeatureClass.A1, FeatureClass.F1, FeatureClass.F3, FeatureClass.FL,
+                                 FeatureClass.M0, FeatureClass.M1, FeatureClass.M2, FeatureClass.M3,
+                                 FeatureClass.R1]
 
     @staticmethod
-    def supports_gateway(type_of_gateway: TypeOfGateway):
+    def supports_gateway(type_of_gateway: TypeOfGateway) -> bool:
         return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
@@ -139,12 +119,12 @@ class PowerTagResetReactiveEnergyDelivered(WirelessDeviceEntity, ButtonEntity):
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
-        return feature_class in [FeatureClass.A1, FeatureClass.A2, FeatureClass.P1, FeatureClass.F1, FeatureClass.F2,
-                                 FeatureClass.F3, FeatureClass.FL, FeatureClass.M0, FeatureClass.M1, FeatureClass.M2,
-                                 FeatureClass.M3, FeatureClass.R1, FeatureClass.C]
+        return feature_class in [
+            FeatureClass.FL, FeatureClass.M0, FeatureClass.M1, FeatureClass.M2, FeatureClass.M3, FeatureClass.R1
+        ]
 
     @staticmethod
-    def supports_gateway(type_of_gateway: TypeOfGateway):
+    def supports_gateway(type_of_gateway: TypeOfGateway) -> bool:
         return type_of_gateway in [TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
@@ -163,10 +143,32 @@ class PowerTagResetReactiveEnergyReceived(WirelessDeviceEntity, ButtonEntity):
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
-        return feature_class in [FeatureClass.A1, FeatureClass.A2, FeatureClass.P1, FeatureClass.F1, FeatureClass.F2,
-                                 FeatureClass.F3, FeatureClass.FL, FeatureClass.M0, FeatureClass.M1, FeatureClass.M2,
-                                 FeatureClass.M3, FeatureClass.R1, FeatureClass.C]
+        return feature_class in [
+            FeatureClass.FL, FeatureClass.M0, FeatureClass.M1, FeatureClass.M2, FeatureClass.M3, FeatureClass.R1
+        ]
 
     @staticmethod
-    def supports_gateway(type_of_gateway: TypeOfGateway):
+    def supports_gateway(type_of_gateway: TypeOfGateway) -> bool:
+        return type_of_gateway in [TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
+
+
+class PowerTagResetApparentEnergy(WirelessDeviceEntity, ButtonEntity):
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
+        super().__init__(client, modbus_index, tag_device, "reset apparent energy")
+
+    def press(self) -> None:
+        self.reset()
+
+    async def async_press(self) -> None:
+        self.reset()
+
+    def reset(self):
+        self._client.tag_reset_energy_apparent_partial(self._modbus_index)
+
+    @staticmethod
+    def supports_feature_set(feature_class: FeatureClass) -> bool:
+        return feature_class in [FeatureClass.FL, FeatureClass.R1]
+
+    @staticmethod
+    def supports_gateway(type_of_gateway: TypeOfGateway) -> bool:
         return type_of_gateway in [TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]

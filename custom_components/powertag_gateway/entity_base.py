@@ -110,7 +110,7 @@ class GatewayEntity(Entity):
         self._attr_unique_id = f"{TAG_DOMAIN}{serial}{sensor_name}"
 
     @staticmethod
-    def supports_gateway(type_of_gateway: TypeOfGateway):
+    def supports_gateway(type_of_gateway: TypeOfGateway) -> bool:
         raise NotImplementedError()
 
 
@@ -130,8 +130,12 @@ class WirelessDeviceEntity(Entity):
         raise NotImplementedError()
 
     @staticmethod
-    def supports_gateway(type_of_gateway: TypeOfGateway):
+    def supports_gateway(type_of_gateway: TypeOfGateway) -> bool:
         raise NotImplementedError()
+
+    @staticmethod
+    def supports_firmware_version(firmware_version: str) -> bool:
+        return True
 
 
 def collect_entities(client: SchneiderModbus, entities: list[Entity], feature_class: FeatureClass, modbus_address: int,
@@ -228,7 +232,9 @@ def setup_entities(hass: HomeAssistant, config_entry: ConfigEntry, powertag_enti
 
         for powertag_entity in [
             entity for entity in powertag_entities
-            if entity.supports_feature_set(feature_class) and entity.supports_gateway(client.type_of_gateway)
+            if entity.supports_feature_set(feature_class)
+               and entity.supports_gateway(client.type_of_gateway)
+               and entity.supports_firmware_version(tag_device['sw_version'])
         ]:
             collect_entities(
                 client, entities, feature_class, modbus_address, powertag_entity, tag_device, tag_phase_sequence

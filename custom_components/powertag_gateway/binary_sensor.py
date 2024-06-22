@@ -8,8 +8,8 @@ from homeassistant.helpers.entity import EntityCategory, DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import CONF_CLIENT, DOMAIN
-from .entity_base import WirelessDeviceEntity, GatewayEntity, setup_entities, gateway_device_info
 from .device_features import FeatureClass
+from .entity_base import WirelessDeviceEntity, GatewayEntity, setup_entities, gateway_device_info
 from .schneider_modbus import SchneiderModbus, LinkStatus, PanelHealth, TypeOfGateway
 
 _LOGGER = logging.getLogger(__name__)

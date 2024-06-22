@@ -50,7 +50,8 @@ class PanelHealth(enum.Enum):
 
 class AlarmDetails:
     def __init__(self, bitmask: int):
-        self.has_alarm = bitmask != 0
+        self.bitmask = bitmask
+        self.has_alarm = bitmask & (0b1 << 14) - 1 != 0
 
         self.voltage_loss = 0b1 & bitmask != 0
         self.current_overload_when_voltage_loss = 0b1 << 1 & bitmask != 0
@@ -66,6 +67,9 @@ class AlarmDetails:
         self.device_replacement = 0b1 << 11 & bitmask != 0
         self.current_50_percent = 0b1 << 12 & bitmask != 0
         self.current_80_percent = 0b1 << 13 & bitmask != 0
+
+    def __str__(self):
+        return bin(self.bitmask)
 
 
 class DeviceUsage(enum.Enum):
@@ -498,13 +502,13 @@ class SchneiderModbus:
     def tag_is_alarm_valid(self, tag_index: int) -> AlarmDetails | bool | None:
         """Validity of the alarm bitmap"""
         if self.type_of_gateway is TypeOfGateway.PANEL_SERVER:
-            return AlarmDetails(self.__read_int_16(0xCE1, tag_index))
+            return AlarmDetails(self.__read_int_32(0xCE1, tag_index))
         else:
-            return (self.__read_int_16(0xCE1, tag_index) & 0b1) != 0
+            return (self.__read_int_32(0xCE1, tag_index) & 0b1) != 0
 
     def tag_get_alarm(self, tag_index: int) -> AlarmDetails:
         """Alarms"""
-        return AlarmDetails(self.__read_int_16(0xCE3, tag_index))
+        return AlarmDetails(self.__read_int_32(0xCE3, tag_index))
 
     def tag_current_at_voltage_loss(self, tag_index: int, phase: Phase) -> float | None:
         """RMS current on phase at voltage loss (last RMS current measured when voltage loss occurred)"""

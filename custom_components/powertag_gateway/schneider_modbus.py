@@ -383,19 +383,31 @@ class SchneiderModbus:
 
     def tag_energy_active_delivered_partial(self, tag_index: int) -> int | None:
         """Active energy delivered (resettable)"""
-        return self.__read_int_64(0x1390, tag_index)
+        if self.type_of_gateway == TypeOfGateway.SMARTLINK:
+            return self.__read_int_64(0x0C87, tag_index)
+        else:
+            return self.__read_int_64(0x1390, tag_index)
 
     def tag_energy_active_delivered_total(self, tag_index: int) -> int | None:
         """Active energy delivered count positively (not resettable)"""
-        return self.__read_int_64(0x1394, tag_index)
+        if self.type_of_gateway == TypeOfGateway.SMARTLINK:
+            return self.__read_int_64(0x0, tag_index)
+        else:
+            return self.__read_int_64(0x1394, tag_index)
 
     def tag_energy_active_received_partial(self, tag_index: int) -> int | None:
         """Active energy received (resettable)"""
-        return self.__read_int_64(0x1398, tag_index)
+        if self.type_of_gateway == TypeOfGateway.SMARTLINK:
+            return self.__read_int_64(0x0CC7, tag_index)
+        else:
+            return self.__read_int_64(0x1398, tag_index)
 
     def tag_energy_active_received_total(self, tag_index: int) -> int | None:
         """Active energy received count negatively (not resettable)"""
-        return self.__read_int_64(0x139C, tag_index)
+        if self.type_of_gateway == TypeOfGateway.SMARTLINK:
+            return self.__read_int_64(0x0C8B, tag_index)
+        else:
+            return self.__read_int_64(0x139C, tag_index)
 
     def tag_energy_active_delivered_partial_phase(self, tag_index: int, phase: Phase) -> int | None:
         """Active energy on phase delivered (resettable)"""
@@ -415,7 +427,10 @@ class SchneiderModbus:
 
     def tag_energy_reactive_delivered_partial(self, tag_index: int) -> int | None:
         """Reactive energy delivered (resettable)"""
-        return self.__read_int_64(0x1438, tag_index)
+        if self.type_of_gateway == TypeOfGateway.SMARTLINK:
+            return self.__read_int_64(0x0CCF, tag_index)
+        else:
+            return self.__read_int_64(0x1438, tag_index)
 
     def tag_energy_reactive_delivered_total(self, tag_index: int) -> int | None:
         """Reactive energy delivered count positively (not resettable)"""
@@ -423,7 +438,10 @@ class SchneiderModbus:
 
     def tag_energy_reactive_received_partial(self, tag_index: int) -> int | None:
         """Reactive energy received (resettable)"""
-        return self.__read_int_64(0x1488, tag_index)
+        if self.type_of_gateway == TypeOfGateway.SMARTLINK:
+            return self.__read_int_64(0x0CD7, tag_index)
+        else:
+            return self.__read_int_64(0x1488, tag_index)
 
     def tag_energy_reactive_received_total(self, tag_index: int) -> int | None:
         """Reactive energy received count negatively (not resettable)"""

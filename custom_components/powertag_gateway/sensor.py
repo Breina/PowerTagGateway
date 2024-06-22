@@ -339,7 +339,7 @@ class PowerTagPartialActiveEnergyDeliveredPerPhase(WirelessDeviceEntity, SensorE
 
     @staticmethod
     def supports_gateway(type_of_gateway: TypeOfGateway) -> bool:
-        return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
+        return type_of_gateway in [TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
 class PowerTagTotalActiveEnergyDeliveredPerPhase(WirelessDeviceEntity, SensorEntity):
@@ -367,7 +367,7 @@ class PowerTagTotalActiveEnergyDeliveredPerPhase(WirelessDeviceEntity, SensorEnt
 
     @staticmethod
     def supports_gateway(type_of_gateway: TypeOfGateway) -> bool:
-        return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
+        return type_of_gateway in [TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
 class PowerTagPartialActiveEnergyReceived(WirelessDeviceEntity, SensorEntity):
@@ -443,7 +443,7 @@ class PowerTagPartialActiveEnergyReceivedPerPhase(WirelessDeviceEntity, SensorEn
 
     @staticmethod
     def supports_gateway(type_of_gateway: TypeOfGateway) -> bool:
-        return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
+        return type_of_gateway in [TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
 class PowerTagTotalActiveEnergyReceivedPerPhase(WirelessDeviceEntity, SensorEntity):
@@ -471,7 +471,7 @@ class PowerTagTotalActiveEnergyReceivedPerPhase(WirelessDeviceEntity, SensorEnti
 
     @staticmethod
     def supports_gateway(type_of_gateway: TypeOfGateway) -> bool:
-        return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
+        return type_of_gateway in [TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
 class PowerTagPartialActiveEnergyDeliveredAndReceived(WirelessDeviceEntity, SensorEntity):
@@ -536,7 +536,7 @@ class PowerTagTotalReactiveEnergyDelivered(WirelessDeviceEntity, SensorEntity):
 
     @staticmethod
     def supports_gateway(type_of_gateway: TypeOfGateway) -> bool:
-        return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
+        return type_of_gateway in [TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
 class PowerTagPartialReactiveEnergyDeliveredPerPhase(WirelessDeviceEntity, SensorEntity):
@@ -562,7 +562,7 @@ class PowerTagPartialReactiveEnergyDeliveredPerPhase(WirelessDeviceEntity, Senso
 
     @staticmethod
     def supports_gateway(type_of_gateway: TypeOfGateway) -> bool:
-        return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
+        return type_of_gateway in [TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
 class PowerTagTotalReactiveEnergyDeliveredPerPhase(WirelessDeviceEntity, SensorEntity):
@@ -588,7 +588,7 @@ class PowerTagTotalReactiveEnergyDeliveredPerPhase(WirelessDeviceEntity, SensorE
 
     @staticmethod
     def supports_gateway(type_of_gateway: TypeOfGateway) -> bool:
-        return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
+        return type_of_gateway in [TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
 class PowerTagPartialReactiveEnergyReceived(WirelessDeviceEntity, SensorEntity):
@@ -635,7 +635,7 @@ class PowerTagTotalReactiveEnergyReceived(WirelessDeviceEntity, SensorEntity):
 
     @staticmethod
     def supports_gateway(type_of_gateway: TypeOfGateway) -> bool:
-        return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
+        return type_of_gateway in [TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
 class PowerTagPartialReactiveEnergyReceivedPerPhase(WirelessDeviceEntity, SensorEntity):
@@ -661,7 +661,7 @@ class PowerTagPartialReactiveEnergyReceivedPerPhase(WirelessDeviceEntity, Sensor
 
     @staticmethod
     def supports_gateway(type_of_gateway: TypeOfGateway) -> bool:
-        return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
+        return type_of_gateway in [TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
 class PowerTagTotalReactiveEnergyReceivedPerPhase(WirelessDeviceEntity, SensorEntity):
@@ -687,7 +687,7 @@ class PowerTagTotalReactiveEnergyReceivedPerPhase(WirelessDeviceEntity, SensorEn
 
     @staticmethod
     def supports_gateway(type_of_gateway: TypeOfGateway) -> bool:
-        return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
+        return type_of_gateway in [TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
 class PowerTagPartialApparentEnergy(WirelessDeviceEntity, SensorEntity):
@@ -748,7 +748,7 @@ class PowerTagPartialApparentEnergyPerPhase(WirelessDeviceEntity, SensorEntity):
 
     @staticmethod
     def supports_gateway(type_of_gateway: TypeOfGateway) -> bool:
-        return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
+        return type_of_gateway in [TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
 class PowerTagTotalApparentEnergyPerPhase(WirelessDeviceEntity, SensorEntity):
@@ -769,7 +769,7 @@ class PowerTagTotalApparentEnergyPerPhase(WirelessDeviceEntity, SensorEntity):
 
     @staticmethod
     def supports_gateway(type_of_gateway: TypeOfGateway) -> bool:
-        return type_of_gateway in [TypeOfGateway.SMARTLINK, TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
+        return type_of_gateway in [TypeOfGateway.POWERTAG_LINK, TypeOfGateway.PANEL_SERVER]
 
 
 class PowerTagCurrent(WirelessDeviceEntity, SensorEntity):

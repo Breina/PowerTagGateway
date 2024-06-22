@@ -497,7 +497,7 @@ class PowerTagPartialActiveEnergyDeliveredAndReceived(WirelessDeviceEntity, Sens
 
 
 class PowerTagPartialReactiveEnergyDelivered(WirelessDeviceEntity, SensorEntity):
-    # TODO lobby for Reactive-energy
+    # TODO lobby for Reactive-energy: https://github.com/home-assistant/architecture/discussions/724
     _attr_device_class = SensorDeviceClass.ENERGY
     _attr_native_unit_of_measurement = "VARh"
     _attr_state_class = SensorStateClass.TOTAL_INCREASING

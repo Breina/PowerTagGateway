@@ -1028,12 +1028,12 @@ class EnvTagHumidity(WirelessDeviceEntity, SensorEntity):
     def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
         super().__init__(client, modbus_index, tag_device, "humidity")
         self._attr_extra_state_attributes = {
-            "Minimum measurable humidity (%)": client.env_humidity_minimum(modbus_index),
-            "Maximum measurable humidity (%)": client.env_humidity_maximum(modbus_index)
+            "Minimum measurable humidity (%)": client.env_humidity_minimum(modbus_index) * 100,
+            "Maximum measurable humidity (%)": client.env_humidity_maximum(modbus_index) * 100
         }
 
     async def async_update(self):
-        self._attr_native_value = self._client.env_humidity(self._modbus_index)
+        self._attr_native_value = self._client.env_humidity(self._modbus_index) * 100
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:

@@ -8,22 +8,23 @@ from homeassistant.helpers.entity import Entity, DeviceInfo
 
 from .const import CONF_CLIENT, DOMAIN
 from .const import GATEWAY_DOMAIN, TAG_DOMAIN
-from .powertag_features import FeatureClass, from_commercial_reference, UnknownDevice, from_wireless_device_type_code
+from .device_features import FeatureClass, from_commercial_reference, UnknownDevice, from_wireless_device_type_code
 from .schneider_modbus import SchneiderModbus, Phase, LineVoltage, PhaseSequence, TypeOfGateway
 
 _LOGGER = logging.getLogger(__name__)
 
 
 def gateway_device_info(client: SchneiderModbus, presentation_url: str) -> DeviceInfo:
+    serial = client.serial_number()
     return DeviceInfo(
         configuration_url=presentation_url,
-        identifiers={(GATEWAY_DOMAIN, client.serial_number())},
+        identifiers={(GATEWAY_DOMAIN, serial)},
         hw_version=client.hardware_version(),
         sw_version=client.firmware_version(),
         manufacturer=client.manufacturer(),
         model=client.product_code(),
         name=client.name(),
-        serial_number=client.serial_number()
+        serial_number=serial
     )
 
 
@@ -109,11 +110,11 @@ class GatewayEntity(Entity):
         self._attr_unique_id = f"{TAG_DOMAIN}{serial}{sensor_name}"
 
     @staticmethod
-    def supports_gateway(type_of_gateway: TypeOfGateway):
+    def supports_gateway(type_of_gateway: TypeOfGateway) -> bool:
         raise NotImplementedError()
 
 
-class PowerTagEntity(Entity):
+class WirelessDeviceEntity(Entity):
     def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, entity_name: str):
         self._client = client
         self._modbus_index = modbus_index
@@ -129,12 +130,16 @@ class PowerTagEntity(Entity):
         raise NotImplementedError()
 
     @staticmethod
-    def supports_gateway(type_of_gateway: TypeOfGateway):
+    def supports_gateway(type_of_gateway: TypeOfGateway) -> bool:
         raise NotImplementedError()
+
+    @staticmethod
+    def supports_firmware_version(firmware_version: str) -> bool:
+        return True
 
 
 def collect_entities(client: SchneiderModbus, entities: list[Entity], feature_class: FeatureClass, modbus_address: int,
-                     powertag_entity: type[PowerTagEntity], tag_device: DeviceInfo, tag_phase_sequence: PhaseSequence):
+                     powertag_entity: type[WirelessDeviceEntity], tag_device: DeviceInfo, tag_phase_sequence: PhaseSequence):
     params_raw = inspect.signature(powertag_entity.__init__).parameters
     params = [name for name in params_raw.items() if name[0] != "self" and name[0] != "kwargs"]
     args = []
@@ -171,7 +176,7 @@ def collect_entities(client: SchneiderModbus, entities: list[Entity], feature_cl
         entities.append(powertag_entity(*args))
 
 
-def setup_entities(hass: HomeAssistant, config_entry: ConfigEntry, powertag_entities: list[type[PowerTagEntity]]):
+def setup_entities(hass: HomeAssistant, config_entry: ConfigEntry, powertag_entities: list[type[WirelessDeviceEntity]]):
     data = hass.data[DOMAIN][config_entry.entry_id]
     client = data[CONF_CLIENT]
     presentation_url = data[CONF_INTERNAL_URL]
@@ -184,6 +189,9 @@ def setup_entities(hass: HomeAssistant, config_entry: ConfigEntry, powertag_enti
 
         if client.type_of_gateway == TypeOfGateway.SMARTLINK:
             identifier = client.tag_product_identifier(modbus_address)
+            if identifier is None:
+                break
+
             _LOGGER.debug(f"Found device #{modbus_address} to have product wireless device type code {identifier}")
 
             try:
@@ -224,7 +232,9 @@ def setup_entities(hass: HomeAssistant, config_entry: ConfigEntry, powertag_enti
 
         for powertag_entity in [
             entity for entity in powertag_entities
-            if entity.supports_feature_set(feature_class) and entity.supports_gateway(client.type_of_gateway)
+            if entity.supports_feature_set(feature_class)
+               and entity.supports_gateway(client.type_of_gateway)
+               and entity.supports_firmware_version(tag_device['sw_version'])
         ]:
             collect_entities(
                 client, entities, feature_class, modbus_address, powertag_entity, tag_device, tag_phase_sequence

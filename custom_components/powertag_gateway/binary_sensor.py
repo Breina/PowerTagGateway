@@ -7,7 +7,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory, DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from . import CONF_CLIENT, DOMAIN
+from . import CONF_CLIENT, DOMAIN, UniqueIdVersion
 from .device_features import FeatureClass
 from .entity_base import WirelessDeviceEntity, GatewayEntity, setup_entities, gateway_device_info
 from .schneider_modbus import SchneiderModbus, LinkStatus, PanelHealth, TypeOfGateway
@@ -49,8 +49,8 @@ class PowerTagWirelessCommunicationValid(WirelessDeviceEntity, BinarySensorEntit
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
-        super().__init__(client, modbus_index, tag_device, "wireless communication valid")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, "wireless communication valid", unique_id_version)
 
     async def async_update(self):
         self._attr_is_on = self._client.tag_wireless_communication_valid(self._modbus_index)
@@ -71,8 +71,8 @@ class PowerTagRadioCommunicationValid(WirelessDeviceEntity, BinarySensorEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
-        super().__init__(client, modbus_index, tag_device, "radio communication valid")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, "radio communication valid", unique_id_version)
 
     async def async_update(self):
         self._attr_is_on = self._client.tag_radio_communication_valid(self._modbus_index)
@@ -92,8 +92,8 @@ class PowerTagRadioCommunicationValid(WirelessDeviceEntity, BinarySensorEntity):
 class PowerTagAlarm(WirelessDeviceEntity, BinarySensorEntity):
     _attr_device_class = BinarySensorDeviceClass.PROBLEM
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
-        super().__init__(client, modbus_index, tag_device, "alarm info")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, "alarm info", unique_id_version)
 
     async def async_update(self):
         alarm = self._client.tag_get_alarm(self._modbus_index)
@@ -126,8 +126,8 @@ class PowerTagAlarm(WirelessDeviceEntity, BinarySensorEntity):
 class AmbientTagAlarm(WirelessDeviceEntity, BinarySensorEntity):
     _attr_device_class = BinarySensorDeviceClass.PROBLEM
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
-        super().__init__(client, modbus_index, tag_device, "battery")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, "battery", unique_id_version)
         self.__product_range = self._client.tag_product_range(self._modbus_index)
 
     async def async_update(self):

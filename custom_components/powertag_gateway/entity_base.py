@@ -6,7 +6,8 @@ from homeassistant.const import CONF_INTERNAL_URL
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import Entity, DeviceInfo
 
-from .const import CONF_CLIENT, DOMAIN
+from . import UniqueIdVersion
+from .const import CONF_CLIENT, DOMAIN, CONF_DEVICE_UNIQUE_ID_VERSION
 from .const import GATEWAY_DOMAIN, TAG_DOMAIN
 from .device_features import FeatureClass, from_commercial_reference, UnknownDevice, from_wireless_device_type_code
 from .schneider_modbus import SchneiderModbus, Phase, LineVoltage, PhaseSequence, TypeOfGateway
@@ -115,7 +116,10 @@ class GatewayEntity(Entity):
 
 
 class WirelessDeviceEntity(Entity):
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, entity_name: str):
+    def __init__(self, client: SchneiderModbus, modbus_index: int,
+                 tag_device: DeviceInfo, entity_name: str,
+                 unique_id_version: UniqueIdVersion):
+
         self._client = client
         self._modbus_index = modbus_index
 
@@ -123,7 +127,11 @@ class WirelessDeviceEntity(Entity):
         self._attr_name = f"{tag_device['name']} {entity_name}"
 
         serial = client.tag_serial_number(modbus_index)
-        self._attr_unique_id = f"{TAG_DOMAIN}{serial}{entity_name}"
+
+        if unique_id_version == UniqueIdVersion.V1:
+            self._attr_unique_id = f"{TAG_DOMAIN}{serial}{entity_name}{modbus_index}"
+        else:
+            self._attr_unique_id = f"{TAG_DOMAIN}{serial}{entity_name}"
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -139,7 +147,7 @@ class WirelessDeviceEntity(Entity):
 
 
 def collect_entities(client: SchneiderModbus, entities: list[Entity], feature_class: FeatureClass, modbus_address: int,
-                     powertag_entity: type[WirelessDeviceEntity], tag_device: DeviceInfo, tag_phase_sequence: PhaseSequence):
+                     powertag_entity: type[WirelessDeviceEntity], tag_device: DeviceInfo, tag_phase_sequence: PhaseSequence, device_unique_id_version: UniqueIdVersion):
     params_raw = inspect.signature(powertag_entity.__init__).parameters
     params = [name for name in params_raw.items() if name[0] != "self" and name[0] != "kwargs"]
     args = []
@@ -164,6 +172,8 @@ def collect_entities(client: SchneiderModbus, entities: list[Entity], feature_cl
             assert not enumerate_param
             enumerate_param = (len(args), phase_sequence_to_line_voltages(tag_phase_sequence, feature_class))
             args.append(None)
+        elif typey == UniqueIdVersion:
+            args.append(device_unique_id_version)
         else:
             raise AssertionError("Dev fucked up, please create a GitHub issue. :(")
     if enumerate_param:
@@ -180,6 +190,8 @@ def setup_entities(hass: HomeAssistant, config_entry: ConfigEntry, powertag_enti
     data = hass.data[DOMAIN][config_entry.entry_id]
     client = data[CONF_CLIENT]
     presentation_url = data[CONF_INTERNAL_URL]
+    device_unique_id_version = data[CONF_DEVICE_UNIQUE_ID_VERSION]
+
     entities = []
     gateway_device = gateway_device_info(client, presentation_url)
     for i in range(1, 100):
@@ -237,7 +249,9 @@ def setup_entities(hass: HomeAssistant, config_entry: ConfigEntry, powertag_enti
                and entity.supports_firmware_version(tag_device['sw_version'])
         ]:
             collect_entities(
-                client, entities, feature_class, modbus_address, powertag_entity, tag_device, tag_phase_sequence
+                client, entities, feature_class, modbus_address,
+                powertag_entity, tag_device, tag_phase_sequence,
+                device_unique_id_version
             )
 
         _LOGGER.info(f"Done with device at address {modbus_address}: {device_name}")

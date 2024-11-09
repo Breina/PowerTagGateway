@@ -6,6 +6,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
+from . import UniqueIdVersion
 from .device_features import FeatureClass
 from .entity_base import WirelessDeviceEntity, setup_entities
 from .schneider_modbus import SchneiderModbus, TypeOfGateway
@@ -35,8 +36,8 @@ async def async_setup_entry(
 
 
 class PowerTagResetPeakDemand(WirelessDeviceEntity, ButtonEntity):
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
-        super().__init__(client, modbus_index, tag_device, "reset peak demand")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, "reset peak demand", unique_id_version)
 
     def press(self) -> None:
         self.reset()
@@ -57,8 +58,8 @@ class PowerTagResetPeakDemand(WirelessDeviceEntity, ButtonEntity):
 
 
 class PowerTagResetActiveEnergyDelivered(WirelessDeviceEntity, ButtonEntity):
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
-        super().__init__(client, modbus_index, tag_device, "reset active energy delivered")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, "reset active energy delivered", unique_id_version)
 
     def press(self) -> None:
         self.reset()
@@ -81,8 +82,8 @@ class PowerTagResetActiveEnergyDelivered(WirelessDeviceEntity, ButtonEntity):
 
 
 class PowerTagResetActiveEnergyReceived(WirelessDeviceEntity, ButtonEntity):
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
-        super().__init__(client, modbus_index, tag_device, "reset active energy received")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, "reset active energy received", unique_id_version)
 
     def press(self) -> None:
         self.reset()
@@ -105,8 +106,8 @@ class PowerTagResetActiveEnergyReceived(WirelessDeviceEntity, ButtonEntity):
 
 
 class PowerTagResetReactiveEnergyDelivered(WirelessDeviceEntity, ButtonEntity):
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
-        super().__init__(client, modbus_index, tag_device, "reset reactive energy delivered")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, "reset reactive energy delivered", unique_id_version)
 
     def press(self) -> None:
         self.reset()
@@ -129,8 +130,8 @@ class PowerTagResetReactiveEnergyDelivered(WirelessDeviceEntity, ButtonEntity):
 
 
 class PowerTagResetReactiveEnergyReceived(WirelessDeviceEntity, ButtonEntity):
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
-        super().__init__(client, modbus_index, tag_device, "reset reactive energy received")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, "reset reactive energy received", unique_id_version)
 
     def press(self) -> None:
         self.reset()
@@ -153,8 +154,8 @@ class PowerTagResetReactiveEnergyReceived(WirelessDeviceEntity, ButtonEntity):
 
 
 class PowerTagResetApparentEnergy(WirelessDeviceEntity, ButtonEntity):
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
-        super().__init__(client, modbus_index, tag_device, "reset apparent energy")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, "reset apparent energy", unique_id_version)
 
     def press(self) -> None:
         self.reset()

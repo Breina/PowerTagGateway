@@ -9,11 +9,13 @@ from urllib.parse import urlparse
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
 from homeassistant import config_entries
-from homeassistant.const import CONF_HOST, CONF_PORT, CONF_DEVICE, CONF_INTERNAL_URL
+from homeassistant.const import CONF_HOST, CONF_PORT, CONF_DEVICE, \
+    CONF_INTERNAL_URL
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 from pymodbus.exceptions import ConnectionException
 
+from . import UniqueIdVersion
 from .const import (
     DEFAULT_MODBUS_PORT,
     CONF_MANUAL_INPUT,
@@ -21,9 +23,10 @@ from .const import (
     DPWS_PRESENTATION_URL,
     DPWS_FRIENDLY_NAME,
     DPWS_SERIAL_NUMBER,
-    DOMAIN, CONF_TYPE_OF_GATEWAY
+    DOMAIN, CONF_TYPE_OF_GATEWAY, CONF_DEVICE_UNIQUE_ID_VERSION
 )
-from .schneider_modbus import SchneiderModbus, TypeOfGateway, LinkStatus, PanelHealth
+from .schneider_modbus import SchneiderModbus, TypeOfGateway, LinkStatus, \
+    PanelHealth
 from .soap_communication import Soapy, dpws_discovery
 
 _LOGGER = logging.getLogger(__name__)
@@ -248,7 +251,8 @@ class PowerTagFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 CONF_HOST: self.host,
                 CONF_PORT: self.port,
                 CONF_INTERNAL_URL: self.presentation_url,
-                CONF_TYPE_OF_GATEWAY: self.type_of_gateway
+                CONF_TYPE_OF_GATEWAY: self.type_of_gateway,
+                CONF_DEVICE_UNIQUE_ID_VERSION: UniqueIdVersion.V1
             },
         )
 

@@ -8,7 +8,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory, DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from . import CONF_CLIENT, DOMAIN
+from . import CONF_CLIENT, DOMAIN, CONF_DEVICE_UNIQUE_ID_VERSION, \
+    UniqueIdVersion
 from .device_features import FeatureClass
 from .entity_base import GatewayEntity, WirelessDeviceEntity, setup_entities, gateway_device_info
 from .schneider_modbus import SchneiderModbus, Phase, LineVoltage, PowerFactorSignConvention, \
@@ -108,8 +109,8 @@ class PowerTagTotalActiveEnergy(WirelessDeviceEntity, SensorEntity):
     _attr_native_unit_of_measurement = "Wh"
     _attr_state_class = SensorStateClass.TOTAL
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
-        super().__init__(client, modbus_index, tag_device, "total active energy")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, "total active energy", unique_id_version)
 
     async def async_update(self):
         self._attr_native_value = self._client.tag_energy_active_delivered_plus_received_total(self._modbus_index)
@@ -130,8 +131,8 @@ class PowerTagReactivePower(WirelessDeviceEntity, SensorEntity):
     _attr_native_unit_of_measurement = "var"
     _attr_state_class = SensorStateClass.MEASUREMENT
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
-        super().__init__(client, modbus_index, tag_device, "reactive power")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, "reactive power", unique_id_version)
 
     async def async_update(self):
         self._attr_native_value = self._client.tag_power_reactive_total(self._modbus_index)
@@ -151,8 +152,8 @@ class PowerTagReactivePowerPerPhase(WirelessDeviceEntity, SensorEntity):
     _attr_native_unit_of_measurement = "var"
     _attr_state_class = SensorStateClass.MEASUREMENT
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, phase: Phase):
-        super().__init__(client, modbus_index, tag_device, f"reactive power phase {phase}")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, phase: Phase, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, f"reactive power phase {phase}", unique_id_version)
         self.__phase = phase
 
     async def async_update(self):
@@ -172,8 +173,8 @@ class PowerTagApparentPower(WirelessDeviceEntity, SensorEntity):
     _attr_native_unit_of_measurement = "VA"
     _attr_state_class = SensorStateClass.MEASUREMENT
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
-        super().__init__(client, modbus_index, tag_device, "apparent power")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, "apparent power", unique_id_version)
 
     async def async_update(self):
         self._attr_native_value = self._client.tag_power_apparent_total(self._modbus_index)
@@ -194,8 +195,8 @@ class PowerTagApparentPowerPerPhase(WirelessDeviceEntity, SensorEntity):
     _attr_native_unit_of_measurement = "VA"
     _attr_state_class = SensorStateClass.MEASUREMENT
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, phase: Phase):
-        super().__init__(client, modbus_index, tag_device, f"apparent power phase {phase}")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, phase: Phase, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, f"apparent power phase {phase}", unique_id_version)
         self.__phase = phase
 
     async def async_update(self):
@@ -215,8 +216,8 @@ class PowerTagPowerFactor(WirelessDeviceEntity, SensorEntity):
     _attr_native_unit_of_measurement = "%"
     _attr_state_class = SensorStateClass.MEASUREMENT
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, feature_class: FeatureClass):
-        super().__init__(client, modbus_index, tag_device, "power factor")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, feature_class: FeatureClass, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, "power factor", unique_id_version)
 
         if feature_class == FeatureClass.R1:
             convention = client.tag_power_factor_sign_convention(self._modbus_index)
@@ -244,8 +245,8 @@ class PowerTagPowerFactorPerPhase(WirelessDeviceEntity, SensorEntity):
     _attr_native_unit_of_measurement = "%"
     _attr_state_class = SensorStateClass.MEASUREMENT
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, phase: Phase):
-        super().__init__(client, modbus_index, tag_device, f"power factor phase {phase}")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, phase: Phase, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, f"power factor phase {phase}", unique_id_version)
         self.__phase = phase
 
         convention = client.tag_power_factor_sign_convention(self._modbus_index)
@@ -271,8 +272,8 @@ class PowerTagPartialActiveEnergyDelivered(WirelessDeviceEntity, SensorEntity):
     _attr_native_unit_of_measurement = "Wh"
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
-        super().__init__(client, modbus_index, tag_device, "partial active energy delivered")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, "partial active energy delivered", unique_id_version)
 
     async def async_update(self):
         self._attr_native_value = self._client.tag_energy_active_delivered_partial(self._modbus_index)
@@ -293,8 +294,8 @@ class PowerTagTotalActiveEnergyDelivered(WirelessDeviceEntity, SensorEntity):
     _attr_native_unit_of_measurement = "Wh"
     _attr_state_class = SensorStateClass.TOTAL
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
-        super().__init__(client, modbus_index, tag_device, "total active energy delivered")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, "total active energy delivered", unique_id_version)
 
     async def async_update(self):
         self._attr_native_value = self._client.tag_energy_active_delivered_total(self._modbus_index)
@@ -315,8 +316,8 @@ class PowerTagPartialActiveEnergyDeliveredPerPhase(WirelessDeviceEntity, SensorE
     _attr_native_unit_of_measurement = "Wh"
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, phase: Phase):
-        super().__init__(client, modbus_index, tag_device, f"partial active energy delivered phase {phase}")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, phase: Phase, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, f"partial active energy delivered phase {phase}", unique_id_version)
         self.__phase = phase
 
     async def async_update(self):
@@ -345,8 +346,8 @@ class PowerTagTotalActiveEnergyDeliveredPerPhase(WirelessDeviceEntity, SensorEnt
     _attr_native_unit_of_measurement = "Wh"
     _attr_state_class = SensorStateClass.TOTAL
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, phase: Phase):
-        super().__init__(client, modbus_index, tag_device, f"total active energy delivered phase {phase}")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, phase: Phase, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, f"total active energy delivered phase {phase}", unique_id_version)
         self.__phase = phase
 
     async def async_update(self):
@@ -373,8 +374,8 @@ class PowerTagPartialActiveEnergyReceived(WirelessDeviceEntity, SensorEntity):
     _attr_native_unit_of_measurement = "Wh"
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
-        super().__init__(client, modbus_index, tag_device, "partial active energy received")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, "partial active energy received", unique_id_version)
 
     async def async_update(self):
         self._attr_native_value = self._client.tag_energy_active_received_partial(self._modbus_index)
@@ -395,8 +396,8 @@ class PowerTagTotalActiveEnergyReceived(WirelessDeviceEntity, SensorEntity):
     _attr_native_unit_of_measurement = "Wh"
     _attr_state_class = SensorStateClass.TOTAL
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
-        super().__init__(client, modbus_index, tag_device, "total active energy received")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, "total active energy received", unique_id_version)
 
     async def async_update(self):
         self._attr_native_value = self._client.tag_energy_active_received_total(self._modbus_index)
@@ -417,8 +418,8 @@ class PowerTagPartialActiveEnergyReceivedPerPhase(WirelessDeviceEntity, SensorEn
     _attr_native_unit_of_measurement = "Wh"
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, phase: Phase):
-        super().__init__(client, modbus_index, tag_device, f"partial active energy received phase {phase}")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, phase: Phase, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, f"partial active energy received phase {phase}", unique_id_version)
         self.__phase = phase
 
     async def async_update(self):
@@ -447,8 +448,8 @@ class PowerTagTotalActiveEnergyReceivedPerPhase(WirelessDeviceEntity, SensorEnti
     _attr_native_unit_of_measurement = "Wh"
     _attr_state_class = SensorStateClass.TOTAL
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, phase: Phase):
-        super().__init__(client, modbus_index, tag_device, f"total active energy received phase {phase}")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, phase: Phase, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, f"total active energy received phase {phase}", unique_id_version)
         self.__phase = phase
 
     async def async_update(self):
@@ -475,8 +476,8 @@ class PowerTagPartialActiveEnergyDeliveredAndReceived(WirelessDeviceEntity, Sens
     _attr_native_unit_of_measurement = "Wh"
     _attr_state_class = SensorStateClass.TOTAL
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
-        super().__init__(client, modbus_index, tag_device, "partial energy delivered and received")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, "partial energy delivered and received", unique_id_version)
 
     async def async_update(self):
         self._attr_native_value = self._client.tag_energy_active_delivered_plus_received_partial(self._modbus_index)
@@ -498,8 +499,8 @@ class PowerTagPartialReactiveEnergyDelivered(WirelessDeviceEntity, SensorEntity)
     _attr_native_unit_of_measurement = "VARh"
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
-        super().__init__(client, modbus_index, tag_device, "partial reactive energy delivered")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, "partial reactive energy delivered", unique_id_version)
 
     async def async_update(self):
         self._attr_native_value = self._client.tag_energy_reactive_delivered_partial(self._modbus_index)
@@ -520,8 +521,8 @@ class PowerTagTotalReactiveEnergyDelivered(WirelessDeviceEntity, SensorEntity):
     _attr_native_unit_of_measurement = "VARh"
     _attr_state_class = SensorStateClass.TOTAL
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
-        super().__init__(client, modbus_index, tag_device, "total reactive energy delivered")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, "total reactive energy delivered", unique_id_version)
 
     async def async_update(self):
         self._attr_native_value = self._client.tag_energy_reactive_delivered_total(self._modbus_index)
@@ -540,8 +541,8 @@ class PowerTagPartialReactiveEnergyDeliveredPerPhase(WirelessDeviceEntity, Senso
     _attr_native_unit_of_measurement = "VARh"
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, phase: Phase):
-        super().__init__(client, modbus_index, tag_device, f"partial reactive energy delivered phase {phase}")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, phase: Phase, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, f"partial reactive energy delivered phase {phase}", unique_id_version)
         self.__phase = phase
 
     async def async_update(self):
@@ -566,8 +567,8 @@ class PowerTagTotalReactiveEnergyDeliveredPerPhase(WirelessDeviceEntity, SensorE
     _attr_native_unit_of_measurement = "VARh"
     _attr_state_class = SensorStateClass.TOTAL
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, phase: Phase):
-        super().__init__(client, modbus_index, tag_device, f"total reactive energy delivered phase {phase}")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, phase: Phase, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, f"total reactive energy delivered phase {phase}", unique_id_version)
         self.__phase = phase
 
     async def async_update(self):
@@ -592,8 +593,8 @@ class PowerTagPartialReactiveEnergyReceived(WirelessDeviceEntity, SensorEntity):
     _attr_native_unit_of_measurement = "VARh"
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
-        super().__init__(client, modbus_index, tag_device, "partial reactive energy received")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, "partial reactive energy received", unique_id_version)
 
     async def async_update(self):
         self._attr_native_value = self._client.tag_energy_reactive_received_partial(self._modbus_index)
@@ -614,8 +615,8 @@ class PowerTagTotalReactiveEnergyReceived(WirelessDeviceEntity, SensorEntity):
     _attr_native_unit_of_measurement = "VARh"
     _attr_state_class = SensorStateClass.TOTAL
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
-        super().__init__(client, modbus_index, tag_device, "total reactive energy received")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, "total reactive energy received", unique_id_version)
 
     async def async_update(self):
         self._attr_native_value = self._client.tag_energy_reactive_received_total(self._modbus_index)
@@ -639,8 +640,8 @@ class PowerTagPartialReactiveEnergyReceivedPerPhase(WirelessDeviceEntity, Sensor
     _attr_native_unit_of_measurement = "VARh"
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, phase: Phase):
-        super().__init__(client, modbus_index, tag_device, f"partial reactive energy received phase {phase}")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, phase: Phase, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, f"partial reactive energy received phase {phase}", unique_id_version)
         self.__phase = phase
 
     async def async_update(self):
@@ -665,8 +666,8 @@ class PowerTagTotalReactiveEnergyReceivedPerPhase(WirelessDeviceEntity, SensorEn
     _attr_native_unit_of_measurement = "VARh"
     _attr_state_class = SensorStateClass.TOTAL
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, phase: Phase):
-        super().__init__(client, modbus_index, tag_device, f"total reactive energy received phase {phase}")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, phase: Phase, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, f"total reactive energy received phase {phase}", unique_id_version)
         self.__phase = phase
 
     async def async_update(self):
@@ -691,8 +692,8 @@ class PowerTagPartialApparentEnergy(WirelessDeviceEntity, SensorEntity):
     _attr_native_unit_of_measurement = "VAh"
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
-        super().__init__(client, modbus_index, tag_device, "partial apparent energy")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, "partial apparent energy", unique_id_version)
 
     async def async_update(self):
         self._attr_native_value = self._client.tag_energy_apparent_partial(self._modbus_index)
@@ -711,8 +712,8 @@ class PowerTagTotalApparentEnergy(WirelessDeviceEntity, SensorEntity):
     _attr_native_unit_of_measurement = "VAh"
     _attr_state_class = SensorStateClass.TOTAL
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
-        super().__init__(client, modbus_index, tag_device, "total apparent energy")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, "total apparent energy", unique_id_version)
 
     async def async_update(self):
         self._attr_native_value = self._client.tag_energy_apparent_total(self._modbus_index)
@@ -731,8 +732,8 @@ class PowerTagPartialApparentEnergyPerPhase(WirelessDeviceEntity, SensorEntity):
     _attr_native_unit_of_measurement = "VAh"
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, phase: Phase):
-        super().__init__(client, modbus_index, tag_device, f"partial apparent energy phase {phase}")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, phase: Phase, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, f"partial apparent energy phase {phase}", unique_id_version)
         self.__phase = phase
 
     async def async_update(self):
@@ -752,8 +753,8 @@ class PowerTagTotalApparentEnergyPerPhase(WirelessDeviceEntity, SensorEntity):
     _attr_native_unit_of_measurement = "VAh"
     _attr_state_class = SensorStateClass.TOTAL
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, phase: Phase):
-        super().__init__(client, modbus_index, tag_device, f"total apparent energy phase {phase}")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, phase: Phase, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, f"total apparent energy phase {phase}", unique_id_version)
         self.__phase = phase
 
     async def async_update(self):
@@ -773,8 +774,8 @@ class PowerTagCurrent(WirelessDeviceEntity, SensorEntity):
     _attr_native_unit_of_measurement = "A"
     _attr_state_class = SensorStateClass.MEASUREMENT
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, phase: Phase):
-        super().__init__(client, modbus_index, tag_device, f"current {phase.name}")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, phase: Phase, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, f"current {phase.name}", unique_id_version)
         self.__phase = phase
 
         self._attr_extra_state_attributes = {
@@ -800,8 +801,8 @@ class PowerTagCurrentNeutral(WirelessDeviceEntity, SensorEntity):
     _attr_native_unit_of_measurement = "A"
     _attr_state_class = SensorStateClass.MEASUREMENT
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
-        super().__init__(client, modbus_index, tag_device, f"current neutral")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, f"current neutral", unique_id_version)
 
         self._attr_extra_state_attributes = {
             "Rated current": client.tag_rated_current(modbus_index)
@@ -824,8 +825,8 @@ class PowerTagVoltage(WirelessDeviceEntity, SensorEntity):
     _attr_native_unit_of_measurement = "V"
     _attr_state_class = SensorStateClass.MEASUREMENT
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, line: LineVoltage):
-        super().__init__(client, modbus_index, tag_device, f"voltage {line.name}")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, line: LineVoltage, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, f"voltage {line.name}", unique_id_version)
         self.__line = line
 
         rated_voltage = client.tag_rated_voltage(modbus_index)
@@ -854,8 +855,8 @@ class PowerTagFrequency(WirelessDeviceEntity, SensorEntity):
     _attr_native_unit_of_measurement = "Hz"
     _attr_state_class = SensorStateClass.MEASUREMENT
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
-        super().__init__(client, modbus_index, tag_device, f"frequency")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, f"frequency", unique_id_version)
 
     async def async_update(self):
         self._attr_native_value = self._client.tag_ac_frequency(self._modbus_index)
@@ -875,8 +876,8 @@ class PowerTagTemperature(WirelessDeviceEntity, SensorEntity):
     _attr_native_unit_of_measurement = "°C"
     _attr_state_class = SensorStateClass.MEASUREMENT
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
-        super().__init__(client, modbus_index, tag_device, f"temperature")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, f"temperature", unique_id_version)
 
     async def async_update(self):
         self._attr_native_value = self._client.tag_device_temperature(self._modbus_index)
@@ -905,8 +906,8 @@ class PowerTagActivePower(WirelessDeviceEntity, SensorEntity):
     _attr_native_unit_of_measurement = "W"
     _attr_state_class = SensorStateClass.MEASUREMENT
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
-        super().__init__(client, modbus_index, tag_device, "active power")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, "active power", unique_id_version)
 
     async def async_update(self):
         self._attr_native_value = self._client.tag_power_active_total(self._modbus_index)
@@ -927,8 +928,8 @@ class PowerTagActivePowerPerPhase(WirelessDeviceEntity, SensorEntity):
     _attr_native_unit_of_measurement = "W"
     _attr_state_class = SensorStateClass.MEASUREMENT
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, phase: Phase):
-        super().__init__(client, modbus_index, tag_device, f"active power phase {phase}")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, phase: Phase, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, f"active power phase {phase}", unique_id_version)
         self.__phase = phase
 
     async def async_update(self):
@@ -950,8 +951,8 @@ class PowerTagDemandActivePower(WirelessDeviceEntity, SensorEntity):
     _attr_native_unit_of_measurement = "W"
     _attr_state_class = SensorStateClass.MEASUREMENT
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
-        super().__init__(client, modbus_index, tag_device, "demand active power")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, "demand active power", unique_id_version)
 
     async def async_update(self):
         self._attr_native_value = self._client.tag_power_active_demand_total(self._modbus_index)
@@ -977,8 +978,8 @@ class EnvTagBatteryVoltage(WirelessDeviceEntity, SensorEntity):
     _attr_native_unit_of_measurement = "V"
     _attr_state_class = SensorStateClass.MEASUREMENT
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
-        super().__init__(client, modbus_index, tag_device, "battery voltage")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, "battery voltage", unique_id_version)
 
     async def async_update(self):
         self._attr_native_value = self._client.env_battery_voltage(self._modbus_index)
@@ -997,8 +998,8 @@ class EnvTagTemperature(WirelessDeviceEntity, SensorEntity):
     _attr_native_unit_of_measurement = "°C"
     _attr_state_class = SensorStateClass.MEASUREMENT
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
-        super().__init__(client, modbus_index, tag_device, "temperature")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, "temperature", unique_id_version)
         self._attr_extra_state_attributes = {
             "Minimum measurable temperature (°C)": client.env_temperature_minimum(modbus_index),
             "Maximum measurable temperature (°C)": client.env_temperature_maximum(modbus_index)
@@ -1021,8 +1022,8 @@ class EnvTagHumidity(WirelessDeviceEntity, SensorEntity):
     _attr_native_unit_of_measurement = "%"
     _attr_state_class = SensorStateClass.MEASUREMENT
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
-        super().__init__(client, modbus_index, tag_device, "humidity")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, "humidity", unique_id_version)
         self._attr_extra_state_attributes = {
             "Minimum measurable humidity (%)": client.env_humidity_minimum(modbus_index) * 100,
             "Maximum measurable humidity (%)": client.env_humidity_maximum(modbus_index) * 100
@@ -1045,8 +1046,8 @@ class EnvTagCO2(WirelessDeviceEntity, SensorEntity):
     _attr_native_unit_of_measurement = "ppm"
     _attr_state_class = SensorStateClass.MEASUREMENT
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
-        super().__init__(client, modbus_index, tag_device, "CO2")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, "CO2", unique_id_version)
 
     async def async_update(self):
         self._attr_native_value = self._client.env_co2(self._modbus_index) * 1000
@@ -1066,8 +1067,8 @@ class DeviceRssiTag(WirelessDeviceEntity, SensorEntity):
     _attr_native_unit_of_measurement = "dBm"
     _attr_state_class = SensorStateClass.MEASUREMENT
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
-        super().__init__(client, modbus_index, tag_device, "RSSI in tag")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, "RSSI in tag", unique_id_version)
 
     async def async_update(self):
         self._attr_native_value = self._client.tag_radio_rssi_inside_tag(self._modbus_index)
@@ -1093,8 +1094,8 @@ class DeviceRssiGateway(WirelessDeviceEntity, SensorEntity):
     _attr_native_unit_of_measurement = "dBm"
     _attr_state_class = SensorStateClass.MEASUREMENT
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
-        super().__init__(client, modbus_index, tag_device, "RSSI in gateway")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, "RSSI in gateway", unique_id_version)
 
     async def async_update(self):
         self._attr_native_value = self._client.tag_radio_rssi_inside_gateway(self._modbus_index)
@@ -1118,8 +1119,8 @@ class DeviceLqiTag(WirelessDeviceEntity, SensorEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_state_class = SensorStateClass.MEASUREMENT
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
-        super().__init__(client, modbus_index, tag_device, "LQI in tag")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, "LQI in tag", unique_id_version)
 
     async def async_update(self):
         self._attr_native_value = self._client.tag_radio_lqi_tag(self._modbus_index)
@@ -1143,8 +1144,8 @@ class DeviceLqiGateway(WirelessDeviceEntity, SensorEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_state_class = SensorStateClass.MEASUREMENT
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
-        super().__init__(client, modbus_index, tag_device, "LQI in gateway")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, "LQI in gateway", unique_id_version)
 
     async def async_update(self):
         self._attr_native_value = self._client.tag_radio_lqi_gateway(self._modbus_index)
@@ -1168,8 +1169,8 @@ class DevicePerTag(WirelessDeviceEntity, SensorEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_state_class = SensorStateClass.MEASUREMENT
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
-        super().__init__(client, modbus_index, tag_device, "packet error rate in tag")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, "packet error rate in tag", unique_id_version)
 
     async def async_update(self):
         self._attr_native_value = self._client.tag_radio_per_tag(self._modbus_index)
@@ -1193,8 +1194,8 @@ class DevicePerGateway(WirelessDeviceEntity, SensorEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_state_class = SensorStateClass.MEASUREMENT
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo):
-        super().__init__(client, modbus_index, tag_device, "packet error rate in gateway")
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
+        super().__init__(client, modbus_index, tag_device, "packet error rate in gateway", unique_id_version)
 
     async def async_update(self):
         self._attr_native_value = self._client.tag_radio_per_gateway(self._modbus_index)

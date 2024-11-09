@@ -1,7 +1,6 @@
 import shutil
 import time
 import webbrowser
-from distutils.dir_util import copy_tree
 
 from requests import get, post, Response
 
@@ -18,7 +17,7 @@ def copy_repo():
     print("Copying repo...")
     # Requires Samba share and it being configured as network location in Windows
     shutil.rmtree(STAGING_FOLDER)
-    copy_tree("custom_components/powertag_gateway", STAGING_FOLDER)
+    shutil.copytree("custom_components/powertag_gateway", STAGING_FOLDER, dirs_exist_ok=True)
 
 
 def restart_ha() -> Response:
@@ -32,14 +31,16 @@ def restart_ha() -> Response:
 
 def open_browser():
     print("Opening browser...")
-    webbrowser.open("https://hesp-staging.frituur:8123/config/integrations/dashboard")
+    webbrowser.open(
+        "https://hesp-staging.frituur:8123/config/integrations/dashboard")
 
 
 def follow_logs():
     print("Following logs...")
     lastTs = time.gmtime()
     while True:
-        newLog = get("http://hesp-staging.frituur/core/logs", headers=HEADERS).text
+        newLog = get("http://hesp-staging.frituur/core/logs",
+                     headers=HEADERS).text
         for logLine in newLog.split("\n"):
             if not logLine:
                 continue

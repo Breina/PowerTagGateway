@@ -128,7 +128,7 @@ class WirelessDeviceEntity(Entity):
 
         serial = client.tag_serial_number(modbus_index)
 
-        if unique_id_version == UniqueIdVersion.V2:
+        if unique_id_version == UniqueIdVersion.V1:
             self._attr_unique_id = f"{TAG_DOMAIN}{serial}{entity_name}{modbus_index}"
         else:
             self._attr_unique_id = f"{TAG_DOMAIN}{serial}{entity_name}"

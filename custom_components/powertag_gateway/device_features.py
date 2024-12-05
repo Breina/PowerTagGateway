@@ -18,7 +18,7 @@ class FeatureClass(Enum):
     M3 = auto()
     R1 = auto()
     C = auto()
-    TEMP0 = auto
+    TEMP0 = auto()
     TEMP1 = auto()
     CO2 = auto()
 

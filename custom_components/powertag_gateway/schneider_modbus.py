@@ -191,7 +191,7 @@ class TypeOfGateway(enum.Enum):
 class SchneiderModbus:
     def __init__(self, host, type_of_gateway: TypeOfGateway, port=502, timeout=5):
         _LOGGER.info(f"Connecting Modbus TCP to {host}:{port}")
-        self.client = ModbusTcpClient(host, port, timeout=timeout)
+        self.client = ModbusTcpClient(host=host, port=port, timeout=timeout)
         self.client.connect()
         self.type_of_gateway = type_of_gateway
         if type_of_gateway is TypeOfGateway.POWERTAG_LINK:

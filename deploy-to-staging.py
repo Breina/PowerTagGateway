@@ -56,7 +56,7 @@ def follow_logs():
 
 
 copy_repo()
-response = restart_ha()
-if response.status_code == 200:
-    open_browser()
-follow_logs()
+# response = restart_ha()
+# if response.status_code == 200:
+#     open_browser()
+# follow_logs()

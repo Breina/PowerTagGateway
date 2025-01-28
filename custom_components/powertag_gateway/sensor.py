@@ -8,8 +8,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory, DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from . import CONF_CLIENT, DOMAIN, CONF_DEVICE_UNIQUE_ID_VERSION, \
-    UniqueIdVersion
+from . import CONF_CLIENT, DOMAIN, UniqueIdVersion
 from .device_features import FeatureClass
 from .entity_base import GatewayEntity, WirelessDeviceEntity, setup_entities, gateway_device_info
 from .schneider_modbus import SchneiderModbus, Phase, LineVoltage, PowerFactorSignConvention, \

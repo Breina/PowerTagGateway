@@ -4,9 +4,9 @@ import math
 from datetime import datetime
 
 from pymodbus.client import ModbusTcpClient
-from pymodbus.constants import Endian, DeviceInformation
-from pymodbus.payload import BinaryPayloadDecoder, BinaryPayloadBuilder
+from pymodbus.constants import DeviceInformation
 from pymodbus.pdu import ExceptionResponse
+from pymodbus.client.mixin import ModbusClientMixin
 
 GATEWAY_SLAVE_ID = 255
 SYNTHESIS_TABLE_SLAVE_ID_START = 247
@@ -212,9 +212,9 @@ class SchneiderModbus:
         valid for firmware version 001.008.007 and later.
         """
         if self.type_of_gateway == TypeOfGateway.SMARTLINK:
-            return self.__read_string(0x006A, 3, GATEWAY_SLAVE_ID, 6)
+            return self.__read_string(0x006A, 3, GATEWAY_SLAVE_ID)
         else:
-            return self.__read_string(0x0050, 6, GATEWAY_SLAVE_ID, 11)
+            return self.__read_string(0x0050, 6, GATEWAY_SLAVE_ID)
 
     def serial_number(self) -> str:
         """[S/N]: PP YY WW [D [nnnn]]
@@ -224,14 +224,14 @@ class SchneiderModbus:
         • D: Day of the week in decimal notation [1...7]
         • nnnn: Sequence of numbers [0001...10.00-0–1]
         """
-        return self.__read_string(0x0064, 6, GATEWAY_SLAVE_ID, 11)
+        return self.__read_string(0x0064, 6, GATEWAY_SLAVE_ID)
 
     def firmware_version(self) -> str:
         """valid for firmware version 001.008.007 and later."""
         if self.type_of_gateway == TypeOfGateway.SMARTLINK:
-            return self.__read_string(0x006D, 3, GATEWAY_SLAVE_ID, 6)
+            return self.__read_string(0x006D, 3, GATEWAY_SLAVE_ID)
         else:
-            return self.__read_string(0x0078, 6, GATEWAY_SLAVE_ID, 11)
+            return self.__read_string(0x0078, 6, GATEWAY_SLAVE_ID)
 
     # Status
 
@@ -532,11 +532,11 @@ class SchneiderModbus:
 
     def tag_name(self, tag_index: int) -> str | None:
         """User application name of the wireless device. The user can enter maximum 20 characters."""
-        return self.__read_string(0x7918, 10, tag_index, 20)
+        return self.__read_string(0x7918, 10, tag_index)
 
     def tag_circuit(self, tag_index: int) -> str:
         """Circuit identifier of the wireless device. The user can enter maximum five characters."""
-        return self.__read_string(0x7922, 3, tag_index, 5)
+        return self.__read_string(0x7922, 3, tag_index)
 
     def tag_usage(self, tag_index: int) -> DeviceUsage:
         """Indicates the usage of the wireless device."""
@@ -644,39 +644,39 @@ class SchneiderModbus:
 
     def tag_vendor_name(self, tag_index: int) -> str | None:
         """Vendor name"""
-        return self.__read_string(0x7944, 16, tag_index, 32)
+        return self.__read_string(0x7944, 16, tag_index)
 
     def tag_product_code(self, tag_index: int) -> str | None:
         """Wireless device commercial reference"""
         if self.type_of_gateway is TypeOfGateway.SMARTLINK:
             return None
-        return self.__read_string(0x7954, 16, tag_index, 32)
+        return self.__read_string(0x7954, 16, tag_index)
 
     def tag_firmware_revision(self, tag_index: int) -> str | None:
         """Firmware revision"""
-        return self.__read_string(0x7964, 6, tag_index, 12)
+        return self.__read_string(0x7964, 6, tag_index)
 
     def tag_hardware_revision(self, tag_index: int) -> str | None:
         """Hardware revision"""
-        return self.__read_string(0x796A, 6, tag_index, 12)
+        return self.__read_string(0x796A, 6, tag_index)
 
     def tag_serial_number(self, tag_index: int) -> str | None:
         """Serial number"""
-        return self.__read_string(0x7970, 10, tag_index, 20)
+        return self.__read_string(0x7970, 10, tag_index)
 
     def tag_product_range(self, tag_index: int) -> str | None:
         """Product range"""
-        return self.__read_string(0x797A, 8, tag_index, 16)
+        return self.__read_string(0x797A, 8, tag_index)
 
     def tag_product_model(self, tag_index: int) -> str | None:
         """Product model"""
-        return self.__read_string(0x7982, 8, tag_index, 16)
+        return self.__read_string(0x7982, 8, tag_index)
 
     def tag_product_family(self, tag_index: int) -> str | None:
         """Product family"""
         if self.type_of_gateway is TypeOfGateway.SMARTLINK:
             return None
-        return self.__read_string(0x798A, 8, tag_index, 16)
+        return self.__read_string(0x798A, 8, tag_index)
 
     # Diagnostic Data Registers
 
@@ -771,9 +771,9 @@ class SchneiderModbus:
     def manufacturer(self) -> str | None:
         """Product ID of the synthesis table"""
         if self.type_of_gateway is TypeOfGateway.POWERTAG_LINK:
-            return self.__read_string(0x0002, 16, self.synthetic_slave_id, 32)
+            return self.__read_string(0x0002, 16, self.synthetic_slave_id)
         elif self.type_of_gateway is TypeOfGateway.PANEL_SERVER:
-            return self.__read_string(0x009F, 16, GATEWAY_SLAVE_ID, 32)
+            return self.__read_string(0x009F, 16, GATEWAY_SLAVE_ID)
         elif self.type_of_gateway is TypeOfGateway.SMARTLINK:
             return "Schneider Electric"
         else:
@@ -782,9 +782,9 @@ class SchneiderModbus:
     def product_code(self) -> str | None:
         """Commercial reference of the gateway"""
         if self.type_of_gateway is TypeOfGateway.POWERTAG_LINK:
-            return self.__read_string(0x0012, 16, self.synthetic_slave_id, 32)
+            return self.__read_string(0x0012, 16, self.synthetic_slave_id)
         elif self.type_of_gateway is TypeOfGateway.PANEL_SERVER:
-            return self.__read_string(0x003C, 16, GATEWAY_SLAVE_ID, 32)
+            return self.__read_string(0x003C, 16, GATEWAY_SLAVE_ID)
         elif self.type_of_gateway is TypeOfGateway.SMARTLINK:
             return "A9XMWA20"
         else:
@@ -793,36 +793,36 @@ class SchneiderModbus:
     def product_range(self) -> str | None:
         """Product range of the gateway"""
         if self.type_of_gateway is TypeOfGateway.POWERTAG_LINK:
-            return self.__read_string(0x0022, 8, self.synthetic_slave_id, 16)
+            return self.__read_string(0x0022, 8, self.synthetic_slave_id)
         elif self.type_of_gateway is TypeOfGateway.PANEL_SERVER:
-            return self.__read_string(0x000A, 16, GATEWAY_SLAVE_ID, 32)
+            return self.__read_string(0x000A, 16, GATEWAY_SLAVE_ID)
         else:
             return "Unknown"
 
     def product_model(self) -> str | None:
         """Product model"""
         if self.type_of_gateway is TypeOfGateway.POWERTAG_LINK:
-            return self.__read_string(0x002A, 8, self.synthetic_slave_id, 16)
+            return self.__read_string(0x002A, 8, self.synthetic_slave_id)
         elif self.type_of_gateway is TypeOfGateway.PANEL_SERVER:
-            return self.__read_string(0xF003, 16, GATEWAY_SLAVE_ID, 32)
+            return self.__read_string(0xF003, 16, GATEWAY_SLAVE_ID)
         else:
             return "Smartlink SI D"
 
     def name(self) -> str | None:
         """Asset name"""
         if self.type_of_gateway is TypeOfGateway.POWERTAG_LINK:
-            return self.__read_string(0x0032, 10, self.synthetic_slave_id, 20)
+            return self.__read_string(0x0032, 10, self.synthetic_slave_id)
         elif self.type_of_gateway is TypeOfGateway.PANEL_SERVER:
-            return self.__read_string(0x1605, 32, GATEWAY_SLAVE_ID, 64)
+            return self.__read_string(0x1605, 32, GATEWAY_SLAVE_ID)
         else:
             return "Unknown"
 
     def product_vendor_url(self) -> str | None:
         """Vendor URL"""
         if self.type_of_gateway is TypeOfGateway.POWERTAG_LINK:
-            return self.__read_string(0x003C, 17, self.synthetic_slave_id, 34)
+            return self.__read_string(0x003C, 17, self.synthetic_slave_id)
         elif self.type_of_gateway is TypeOfGateway.PANEL_SERVER:
-            return self.__read_string(0x002A, 17, GATEWAY_SLAVE_ID, 34)
+            return self.__read_string(0x002A, 17, GATEWAY_SLAVE_ID)
         else:
             return "Unknown"
 
@@ -870,68 +870,57 @@ class SchneiderModbus:
                 print(f"Not {i}: {e}")
         # return self.client.read_device_information(read_code=DeviceInformation.REGULAR, slave=slave_id)
 
-    @staticmethod
-    def decoder(registers):
-        return BinaryPayloadDecoder.fromRegisters(
-            registers, byteorder=Endian.BIG, wordorder=Endian.BIG
-        )
-
-    def __read_string(self, address: int, count: int, slave_id: int, string_length: int) -> str | None:
+    def __read_string(self, address: int, count: int, slave_id: int) -> str | None:
         registers = self.__read(address, count, slave_id)
-        ascii_bytes = self.decoder(registers).decode_string(string_length)
-
-        if all(c == '\x00' for c in ascii_bytes):
-            return None
-
-        filtered_ascii_bytes = bytes(filter(lambda b: b != 0, list(ascii_bytes)))
-        return bytes.decode(filtered_ascii_bytes)
+        return self.client.convert_from_registers(registers, ModbusClientMixin.DATATYPE.STRING)
 
     def __write_string(self, address: int, slave_id: int, string: str):
-        builder = BinaryPayloadBuilder(byteorder=Endian.BIG, wordorder=Endian.BIG)
-        builder.add_string(string.ljust(20, '\x00'))
-        self.__write(address, builder.to_registers(), slave_id)
+        registers = self.client.convert_to_registers(string.ljust(20, '\x00'), ModbusClientMixin.DATATYPE.STRING)
+        self.__write(address, registers, slave_id)
 
     def __read_float_32(self, address: int, slave_id: int) -> float | None:
-        result = self.decoder(self.__read(address, 2, slave_id)).decode_32bit_float()
+        registers = self.__read(address, 2, slave_id)
+        result = self.client.convert_from_registers(registers, ModbusClientMixin.DATATYPE.FLOAT32)
         return self.round_to_significant_digits(result, 7) if not math.isnan(result) else None
 
     def __read_int_16(self, address: int, slave_id: int) -> int | None:
-        result = self.decoder(self.__read(address, 1, slave_id)).decode_16bit_uint()
+        registers = self.__read(address, 1, slave_id)
+        result = self.client.convert_from_registers(registers, ModbusClientMixin.DATATYPE.UINT16)
         return result if result != 0xFFFF else None
 
     def __write_int_16(self, address: int, slave_id: int, value: int):
-        builder = BinaryPayloadBuilder(byteorder=Endian.BIG, wordorder=Endian.BIG)
-        builder.add_16bit_uint(value)
-        self.__write(address, builder.to_registers(), slave_id)
+        registers = self.client.convert_to_registers(value, ModbusClientMixin.DATATYPE.UINT16)
+        self.__write(address, registers, slave_id)
 
     def __read_int_32(self, address: int, slave_id: int) -> int | None:
-        result = self.decoder(self.__read(address, 2, slave_id)).decode_32bit_uint()
+        registers = self.__read(address, 2, slave_id)
+        result = self.client.convert_from_registers(registers, ModbusClientMixin.DATATYPE.UINT32)
         return result if result != 0x8000_0000 else None
 
     def __read_int_64(self, address: int, slave_id: int) -> int | None:
-        result = self.decoder(self.__read(address, 4, slave_id)).decode_64bit_uint()
+        registers = self.__read(address, 4, slave_id)
+        result = self.client.convert_from_registers(registers, ModbusClientMixin.DATATYPE.UINT64)
         return result if result != 0x8000_0000_0000_0000 else None
 
     def __write_int_64(self, address: int, slave_id: int, value: int):
-        builder = BinaryPayloadBuilder(byteorder=Endian.BIG, wordorder=Endian.BIG)
-        builder.add_64bit_uint(value)
-        self.__write(address, builder.to_registers(), slave_id)
+        registers = self.client.convert_to_registers(value, ModbusClientMixin.DATATYPE.UINT64)
+        self.__write(address, registers, slave_id)
 
     def __read_date_time(self, address: int, slave_id) -> datetime | None:
-        d = self.decoder(self.__read(address, 4, slave_id))
+        registers = self.__read(address, 4, slave_id)
 
-        year_raw = d.decode_16bit_uint()
+        year_raw = self.client.convert_from_registers(registers[0:1], ModbusClientMixin.DATATYPE.UINT16)
         year = (year_raw & 0b0111_1111) + 2000
 
-        day_month = d.decode_16bit_uint()
+        day_month = self.client.convert_from_registers(registers[1:2], ModbusClientMixin.DATATYPE.UINT16)
         day = day_month & 0b0001_1111
         month = (day_month >> 8) & 0b0000_1111
 
-        minute_hour = d.decode_16bit_uint()
+        minute_hour = self.client.convert_from_registers(registers[2:3], ModbusClientMixin.DATATYPE.UINT16)
         minute = minute_hour & 0b0011_1111
         hour = (minute_hour >> 8) & 0b0001_1111
 
-        second_millisecond = d.decode_16bit_uint()
+        second_millisecond = self.client.convert_from_registers(registers[3:4], ModbusClientMixin.DATATYPE.UINT16)
         second = math.floor(second_millisecond / 1000)
         millisecond = second_millisecond - second * 1000
 

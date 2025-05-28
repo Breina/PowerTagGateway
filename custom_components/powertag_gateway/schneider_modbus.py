@@ -872,7 +872,7 @@ class SchneiderModbus:
 
     def __read_string(self, address: int, count: int, slave_id: int) -> str | None:
         registers = self.__read(address, count, slave_id)
-        return self.client.convert_from_registers(registers, ModbusClientMixin.DATATYPE.STRING)
+        return str.strip(self.client.convert_from_registers(registers, ModbusClientMixin.DATATYPE.STRING))
 
     def __write_string(self, address: int, slave_id: int, string: str):
         registers = self.client.convert_to_registers(string.ljust(20, '\x00'), ModbusClientMixin.DATATYPE.STRING)
@@ -928,3 +928,12 @@ class SchneiderModbus:
             return None
 
         return datetime(year, month, day, hour, minute, second, millisecond)
+
+# client = SchneiderModbus("192.168.1.114", TypeOfGateway.PANEL_SERVER)
+# client.__read_string()
+# print(client.serial_number())
+# print(client.tag_serial_number(100))
+# print(client.date_time())
+
+
+# print(bytes.decode(bytes([128]), encoding='utf-8'))

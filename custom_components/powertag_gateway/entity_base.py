@@ -5,6 +5,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_INTERNAL_URL
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import Entity, DeviceInfo
+from homeassistant.helpers import device_registry as dr
 
 from . import UniqueIdVersion
 from .const import CONF_CLIENT, DOMAIN, CONF_DEVICE_UNIQUE_ID_VERSION
@@ -194,6 +195,19 @@ def setup_entities(hass: HomeAssistant, config_entry: ConfigEntry, powertag_enti
 
     entities = []
     gateway_device = gateway_device_info(client, presentation_url)
+    device_registry = dr.async_get(hass)
+    device_registry.async_get_or_create(
+        config_entry_id=config_entry.entry_id,
+        identifiers=gateway_device["identifiers"],
+        manufacturer=gateway_device.get("manufacturer"),
+        model=gateway_device.get("model"),
+        name=gateway_device.get("name"),
+        sw_version=gateway_device.get("sw_version"),
+        hw_version=gateway_device.get("hw_version"),
+        configuration_url=gateway_device.get("configuration_url"),
+        serial_number=gateway_device.get("serial_number"),
+    )
+
     for i in range(1, 100):
         modbus_address = client.modbus_address_of_node(i)
         if modbus_address is None:

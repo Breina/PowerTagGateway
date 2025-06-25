@@ -872,7 +872,18 @@ class SchneiderModbus:
 
     def __read_string(self, address: int, count: int, slave_id: int) -> str | None:
         registers = self.__read(address, count, slave_id)
-        return str.strip(self.client.convert_from_registers(registers, ModbusClientMixin.DATATYPE.STRING))
+        byte_array = bytearray()
+        for reg in registers:
+            byte_array += reg.to_bytes(2, byteorder='big')
+
+        try:
+            return byte_array.decode("utf-8").strip('\x00')
+        except UnicodeDecodeError:
+            try:
+                return byte_array.decode("latin-1").strip('\x00')
+            except Exception as e:
+                _LOGGER.error(f"Failed to decode string from Modbus registers at address {address}: {e}")
+                return None
 
     def __write_string(self, address: int, slave_id: int, string: str):
         registers = self.client.convert_to_registers(string.ljust(20, '\x00'), ModbusClientMixin.DATATYPE.STRING)

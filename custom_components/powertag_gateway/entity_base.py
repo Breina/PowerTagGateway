@@ -211,7 +211,7 @@ def setup_entities(hass: HomeAssistant, config_entry: ConfigEntry, powertag_enti
     for i in range(1, 100):
         modbus_address = client.modbus_address_of_node(i)
         if modbus_address is None:
-            break
+            continue
 
         if client.type_of_gateway == TypeOfGateway.SMARTLINK:
             identifier = client.tag_product_identifier(modbus_address)

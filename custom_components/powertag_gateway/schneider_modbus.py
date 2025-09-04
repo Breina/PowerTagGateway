@@ -852,23 +852,23 @@ class SchneiderModbus:
         return round(number, fractional_digits)
 
     def __write(self, address: int, registers: list[int], slave_id: int):
-        self.client.write_registers(address, registers, slave=slave_id)
+        self.client.write_registers(address, registers, device_id=slave_id)
 
     def __read(self, address: int, count: int, slave_id: int):
-        response = self.client.read_holding_registers(address=address, count=count, slave=slave_id)
+        response = self.client.read_holding_registers(address=address, count=count, device_id=slave_id)
         if isinstance(response, ExceptionResponse):
             raise ConnectionError(str(response))
         return response.registers
 
     def __identify(self, slave_id: int):
-        # data = self.client.read_device_information(read_code=DeviceInformation.REGULAR, slave=0xFF)
+        # data = self.client.read_device_information(read_code=DeviceInformation.REGULAR, device_id=0xFF)
         for i in range(0xFF):
             try:
-                response = self.client.read_device_information(read_code=DeviceInformation.REGULAR, slave=i)
+                response = self.client.read_device_information(read_code=DeviceInformation.REGULAR, device_id=i)
                 print(f"Yes {i}: {response}")
             except ExceptionResponse as e:
                 print(f"Not {i}: {e}")
-        # return self.client.read_device_information(read_code=DeviceInformation.REGULAR, slave=slave_id)
+        # return self.client.read_device_information(read_code=DeviceInformation.REGULAR, device_id=slave_id)
 
     def __read_string(self, address: int, count: int, slave_id: int) -> str | None:
         registers = self.__read(address, count, slave_id)

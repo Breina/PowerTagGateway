@@ -199,14 +199,20 @@ class SchneiderModbus:
 
     def find_synthentic_table_slave_id(self):
         for slave_id in range(SYNTHESIS_TABLE_SLAVE_ID_START, 1, -1):
+            _LOGGER.debug(f"Searching for synthesis table at slave ID {slave_id}")
             try:
-                self.__read_int_16(0x0001, slave_id)
+                result =  self.__read_int_16(0x0001, slave_id)
+                _LOGGER.debug(f"Found synthesis table at slave ID {slave_id}")
                 return slave_id
             except ConnectionError:
+                _LOGGER.debug(
+                    f"Got error while finding synthesis table, proceeding with next slave ID"
+                )
                 continue
-        raise ConnectionError("Could not find synthetic slave ID")
 
-    # Identification
+        _LOGGER.warning(f"Could not find synthesis table, proceeding with the default of {SYNTHESIS_TABLE_SLAVE_ID_START}, though expect problems later.")
+        return SYNTHESIS_TABLE_SLAVE_ID_START
+
     def hardware_version(self) -> str:
         """Gateway Hardware version
         valid for firmware version 001.008.007 and later.
@@ -856,7 +862,7 @@ class SchneiderModbus:
 
     def __read(self, address: int, count: int, slave_id: int):
         response = self.client.read_holding_registers(address=address, count=count, device_id=slave_id)
-        if isinstance(response, ExceptionResponse):
+        if response.isError():
             raise ConnectionError(str(response))
         return response.registers
 
@@ -872,18 +878,7 @@ class SchneiderModbus:
 
     def __read_string(self, address: int, count: int, slave_id: int) -> str | None:
         registers = self.__read(address, count, slave_id)
-        byte_array = bytearray()
-        for reg in registers:
-            byte_array += reg.to_bytes(2, byteorder='big')
-
-        try:
-            return byte_array.decode("utf-8").strip('\x00')
-        except UnicodeDecodeError:
-            try:
-                return byte_array.decode("latin-1").strip('\x00')
-            except Exception as e:
-                _LOGGER.error(f"Failed to decode string from Modbus registers at address {address}: {e}")
-                return None
+        return self.client.convert_from_registers(registers, ModbusClientMixin.DATATYPE.STRING)
 
     def __write_string(self, address: int, slave_id: int, string: str):
         registers = self.client.convert_to_registers(string.ljust(20, '\x00'), ModbusClientMixin.DATATYPE.STRING)
@@ -941,7 +936,7 @@ class SchneiderModbus:
         return datetime(year, month, day, hour, minute, second, millisecond)
 
 # client = SchneiderModbus("192.168.1.114", TypeOfGateway.PANEL_SERVER)
-# client.__read_string()
+# print(client.modbus_address_of_node(99))
 # print(client.serial_number())
 # print(client.tag_serial_number(100))
 # print(client.date_time())

@@ -208,10 +208,17 @@ def setup_entities(hass: HomeAssistant, config_entry: ConfigEntry, powertag_enti
         serial_number=gateway_device.get("serial_number"),
     )
 
+    _LOGGER.debug("Starting to scan for devices...")
     for i in range(1, 100):
         modbus_address = client.modbus_address_of_node(i)
+        _LOGGER.debug(f"Found device #{i} at address {modbus_address}")
+
         if modbus_address is None:
-            continue
+            if client.type_of_gateway == TypeOfGateway.PANEL_SERVER:
+                # PanelServers can have out of order devices, so make sure to just scan everything
+                continue
+            else:
+                break
 
         if client.type_of_gateway == TypeOfGateway.SMARTLINK:
             identifier = client.tag_product_identifier(modbus_address)

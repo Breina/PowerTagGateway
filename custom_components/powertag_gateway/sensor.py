@@ -897,7 +897,9 @@ class PowerTagTemperature(WirelessDeviceEntity, SensorEntity):
 
     @staticmethod
     def supports_firmware_version(firmware_version: str) -> bool:
-        return int(firmware_version.split('.')[0]) >= 4
+        import re
+        major_version = re.sub(r'[^0-9.]', '', firmware_version).split('.')[0]
+        return int(major_version) >= 4
 
 
 class PowerTagActivePower(WirelessDeviceEntity, SensorEntity):

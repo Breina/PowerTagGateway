@@ -226,7 +226,7 @@ class PowerTagPowerFactor(WirelessDeviceEntity, SensorEntity):
                 }
 
     async def async_update(self):
-        self._attr_native_value = self._client.tag_power_factor_total(self._modbus_index)
+        self._attr_native_value = self._client.tag_power_factor_total(self._modbus_index) * 100
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -255,7 +255,7 @@ class PowerTagPowerFactorPerPhase(WirelessDeviceEntity, SensorEntity):
             }
 
     async def async_update(self):
-        self._attr_native_value = self._client.tag_power_factor(self._modbus_index, self.__phase)
+        self._attr_native_value = self._client.tag_power_factor(self._modbus_index, self.__phase) * 100
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:

@@ -20,7 +20,8 @@ _LOGGER = logging.getLogger(__name__)
 
 class UniqueIdVersion(Enum):
     V0 = auto()
-    V1 = auto()
+    V1 = auto()  # V1 is the same as V0 because of the bug in Issue #51
+    V2 = auto()
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -33,11 +34,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     type_of_gateway_string = (
         entry.data.get(CONF_TYPE_OF_GATEWAY, TypeOfGateway.POWERTAG_LINK.value))
 
-    type_of_gateway = \
-    [t for t in TypeOfGateway if t.value == type_of_gateway_string][0]
+    type_of_gateway = [t for t in TypeOfGateway if t.value == type_of_gateway_string][0]
 
-    unique_id_version = entry.data.get(CONF_DEVICE_UNIQUE_ID_VERSION)
-    if not unique_id_version:
+    unique_id_version = UniqueIdVersion(entry.data.get(CONF_DEVICE_UNIQUE_ID_VERSION))
+    if unique_id_version is None:
         _LOGGER.warning("Using older version of device's unique ID, "
                         "may cause conflicts with duplicate serials.")
         unique_id_version = UniqueIdVersion.V0

@@ -252,7 +252,7 @@ class PowerTagFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 CONF_PORT: self.port,
                 CONF_INTERNAL_URL: self.presentation_url,
                 CONF_TYPE_OF_GATEWAY: self.type_of_gateway,
-                CONF_DEVICE_UNIQUE_ID_VERSION: UniqueIdVersion.V1
+                CONF_DEVICE_UNIQUE_ID_VERSION: UniqueIdVersion.V2.value
             },
         )
 

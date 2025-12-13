@@ -232,7 +232,8 @@ class PowerTagPowerFactor(WirelessDeviceEntity, SensorEntity):
                 }
 
     async def async_update(self):
-        self._attr_native_value = self._client.tag_power_factor_total(self._modbus_index) * 100
+        power_factor = self._client.tag_power_factor_total(self._modbus_index)
+        self._attr_native_value = power_factor * 100 if power_factor else None
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:

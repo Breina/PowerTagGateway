@@ -56,10 +56,10 @@ def find_tag(tag, source):
 
 async def async_discovery(hass: HomeAssistant) -> list[DiscoveredDevice]:
     """Return if there are devices that can be discovered."""
-    services = await hass.async_add_executor_job(dpws_discovery)
+    services = await dpws_discovery(hass)
 
     _LOGGER.info(f"Found {len(services)} candidates...")
-    for s in dpws_discovery():
+    for s in services:
         _LOGGER.info(s.getTypes())
 
     discovered_devices = []

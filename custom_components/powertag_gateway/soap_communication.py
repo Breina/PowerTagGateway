@@ -33,16 +33,20 @@ template = """<?xml version="1.0" encoding="utf-8"?>
 </soap:Envelope>"""
 
 
-def dpws_discovery() -> list[Service]:
+async def dpws_discovery(hass: HomeAssistant) -> list[Service]:
     """Search a Link Gateway from the network"""
     _LOGGER.info("Attempting to discover EnergyTag Gateway")
 
-    wsd = WSDiscovery()
-    wsd.start()
-    services = wsd.searchServices(types=[QName(NAMESPACE_SCHNEIDER, LOCAL_NAME_GATEWAY_SERVER)])
-    wsd.stop()
-    return services
+    def blocking_discovery():
+        wsd = WSDiscovery()
+        wsd.start()
+        services = wsd.searchServices(
+            types=[QName(NAMESPACE_SCHNEIDER, LOCAL_NAME_GATEWAY_SERVER)]
+        )
+        wsd.stop()
+        return services
 
+    return await hass.async_add_executor_job(blocking_discovery)
 
 class Soapy:
     def __init__(self, service: Service, hass=HomeAssistant):

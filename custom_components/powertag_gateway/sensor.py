@@ -7,6 +7,8 @@ from homeassistant.const import CONF_INTERNAL_URL
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory, DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.components.sensor import SensorEntity, SensorDeviceClass
+from homeassistant.util import dt as dt_util
 
 from . import CONF_CLIENT, DOMAIN, UniqueIdVersion
 from .device_features import FeatureClass
@@ -83,7 +85,7 @@ async def async_setup_entry(
     gateway_device = gateway_device_info(client, presentation_url)
 
     entities.extend([
-        GatewayTime(client, gateway_device),
+            GatewayTime(client, gateway_device),
     ])
 
     async_add_entities(entities, update_before_add=False)
@@ -91,12 +93,16 @@ async def async_setup_entry(
 
 class GatewayTime(GatewayEntity, SensorEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
 
     def __init__(self, client: SchneiderModbus, tag_device: DeviceInfo):
         super().__init__(client, tag_device, "datetime")
 
     async def async_update(self):
-        self._attr_native_value = self._client.date_time()
+        raw_date = self._client.date_time()
+
+        if raw_date:
+            self._attr_native_value = dt_util.as_utc(raw_date)
 
     @staticmethod
     def supports_gateway(type_of_gateway: TypeOfGateway) -> bool:

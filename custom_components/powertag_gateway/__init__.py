@@ -56,3 +56,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     return True
+
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    data = hass.data.get(DOMAIN, {}).get(entry.entry_id)
+    if data is None:
+        return True
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    if not unload_ok:
+        return False
+    client = data.get(CONF_CLIENT)
+    if client is not None:
+        try:
+            if getattr(client, "client", None) is not None:
+                client.client.close()
+        except Exception as err:
+            _LOGGER.warning("Error while closing Modbus client: %s", err)
+    hass.data[DOMAIN].pop(entry.entry_id)
+    return True

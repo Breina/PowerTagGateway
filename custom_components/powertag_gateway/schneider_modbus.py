@@ -1,12 +1,13 @@
+import asyncio
 import enum
 import logging
 import math
 from datetime import datetime
 
-from pymodbus.client import ModbusTcpClient
-from pymodbus.constants import DeviceInformation
-from pymodbus.pdu import ExceptionResponse
-from pymodbus.client.mixin import ModbusClientMixin
+from pymodbus.client import ModbusTcpClient  # type: ignore
+from pymodbus.constants import DeviceInformation  # type: ignore
+from pymodbus.pdu import ExceptionResponse  # type: ignore
+from pymodbus.client.mixin import ModbusClientMixin  # type: ignore
 
 GATEWAY_SLAVE_ID = 255
 SYNTHESIS_TABLE_SLAVE_ID_START = 247
@@ -194,14 +195,20 @@ class SchneiderModbus:
         self.client = ModbusTcpClient(host=host, port=port, timeout=timeout)
         self.client.connect()
         self.type_of_gateway = type_of_gateway
-        if type_of_gateway is TypeOfGateway.POWERTAG_LINK:
-            self.synthetic_slave_id = self.find_synthentic_table_slave_id()
+        self.synthetic_slave_id = None
 
-    def find_synthentic_table_slave_id(self):
+    @classmethod
+    async def create(cls, host, type_of_gateway: TypeOfGateway, port=502, timeout=5):
+        instance = cls(host, type_of_gateway, port, timeout)
+        if type_of_gateway is TypeOfGateway.POWERTAG_LINK:
+            instance.synthetic_slave_id = await instance.find_synthetic_table_slave_id()
+        return instance
+
+    async def find_synthetic_table_slave_id(self):
         for slave_id in range(SYNTHESIS_TABLE_SLAVE_ID_START, 1, -1):
             _LOGGER.debug(f"Searching for synthesis table at slave ID {slave_id}")
             try:
-                result =  self.__read_int_16(0x0001, slave_id)
+                _ = await self.__read_int_16(0x0001, slave_id)
                 _LOGGER.debug(f"Found synthesis table at slave ID {slave_id}")
                 return slave_id
             except ConnectionError:
@@ -210,19 +217,21 @@ class SchneiderModbus:
                 )
                 continue
 
-        _LOGGER.warning(f"Could not find synthesis table, proceeding with the default of {SYNTHESIS_TABLE_SLAVE_ID_START}, though expect problems later.")
+        _LOGGER.warning(
+            f"Could not find synthesis table, proceeding with the default of {SYNTHESIS_TABLE_SLAVE_ID_START}, though expect problems later."
+        )
         return SYNTHESIS_TABLE_SLAVE_ID_START
 
-    def hardware_version(self) -> str:
+    async def hardware_version(self) -> str | None:
         """Gateway Hardware version
         valid for firmware version 001.008.007 and later.
         """
         if self.type_of_gateway == TypeOfGateway.SMARTLINK:
-            return self.__read_string(0x006A, 3, GATEWAY_SLAVE_ID)
+            return await self.__read_string(0x006A, 3, GATEWAY_SLAVE_ID)
         else:
-            return self.__read_string(0x0050, 6, GATEWAY_SLAVE_ID)
+            return await self.__read_string(0x0050, 6, GATEWAY_SLAVE_ID)
 
-    def serial_number(self) -> str:
+    def serial_number(self) -> str | None:
         """[S/N]: PP YY WW [D [nnnn]]
         • PP: Plant
         • YY: Year in decimal notation [05...99]
@@ -230,621 +239,667 @@ class SchneiderModbus:
         • D: Day of the week in decimal notation [1...7]
         • nnnn: Sequence of numbers [0001...10.00-0–1]
         """
-        return self.__read_string(0x0064, 6, GATEWAY_SLAVE_ID)
+        return self.__sync_read_string(0x0064, 6, GATEWAY_SLAVE_ID)
 
-    def firmware_version(self) -> str:
+    async def firmware_version(self) -> str | None:
         """valid for firmware version 001.008.007 and later."""
         if self.type_of_gateway == TypeOfGateway.SMARTLINK:
-            return self.__read_string(0x006D, 3, GATEWAY_SLAVE_ID)
+            return await self.__read_string(0x006D, 3, GATEWAY_SLAVE_ID)
         else:
-            return self.__read_string(0x0078, 6, GATEWAY_SLAVE_ID)
+            return await self.__read_string(0x0078, 6, GATEWAY_SLAVE_ID)
 
     # Status
 
-    def status(self) -> LinkStatus:
+    async def status(self) -> LinkStatus:
         """PowerTag Link gateway status and diagnostic register"""
-        assert self.type_of_gateway in [TypeOfGateway.POWERTAG_LINK, TypeOfGateway.SMARTLINK]
+        assert self.type_of_gateway in [
+            TypeOfGateway.POWERTAG_LINK,
+            TypeOfGateway.SMARTLINK,
+        ]
         bitmap = self.__read_int_16(0x0070, GATEWAY_SLAVE_ID)
         try:
             return LinkStatus(bitmap)
         except Exception as e:
-            _LOGGER.error(f"Could not map status, defaulting to GENERAL_FAILURE ({str(e)}")
+            _LOGGER.error(
+                f"Could not map status, defaulting to GENERAL_FAILURE ({str(e)}"
+            )
             return LinkStatus.GENERAL_FAILURE
 
-    def health(self) -> PanelHealth:
+    async def health(self) -> PanelHealth:
         """PowerTag Link gateway status and diagnostic register"""
         assert self.type_of_gateway == TypeOfGateway.PANEL_SERVER
-        code = self.__read_int_16(0x009E, GATEWAY_SLAVE_ID)
+        code = await self.__read_int_16(0x009E, GATEWAY_SLAVE_ID)
         return PanelHealth(code)
 
     # Date and Time
 
-    def date_time(self) -> datetime | None:
+    async def date_time(self) -> datetime | None:
         """Indicates the year, month, day, hour, minute and millisecond on the PowerTag Link gateway."""
-        return self.__read_date_time(0x0073, GATEWAY_SLAVE_ID)
+        return await self.__read_date_time(0x0073, GATEWAY_SLAVE_ID)
 
     # Current Metering Data
 
-    def tag_current(self, tag_index: int, phase: Phase) -> float | None:
+    async def tag_current(self, tag_index: int, phase: Phase) -> float | None:
         """RMS current on phase"""
-        return self.__read_float_32(0xBB7 + phase.value, tag_index)
+        return await self.__read_float_32(0xBB7 + phase.value, tag_index)
 
-    def tag_current_neutral(self, tag_index: int) -> float | None:
+    async def tag_current_neutral(self, tag_index: int) -> float | None:
         """RMS current on Neutral"""
-        return self.__read_float_32(0xBBD, tag_index)
+        return await self.__read_float_32(0xBBD, tag_index)
 
     # Voltage Metering Data
 
-    def tag_voltage(self, tag_index: int, line_voltage: LineVoltage) -> float | None:
+    async def tag_voltage(
+        self, tag_index: int, line_voltage: LineVoltage
+    ) -> float | None:
         """RMS phase-to-phase voltage"""
-        return self.__read_float_32(0xBCB + line_voltage.value, tag_index)
+        return await self.__read_float_32(0xBCB + line_voltage.value, tag_index)
 
     # Power Metering Data
 
-    def tag_power_active(self, tag_index: int, phase: Phase) -> float | None:
+    async def tag_power_active(self, tag_index: int, phase: Phase) -> float | None:
         """Active power on phase"""
-        return self.__read_float_32(0xBED + phase.value, tag_index)
+        return await self.__read_float_32(0xBED + phase.value, tag_index)
 
-    def tag_power_active_total(self, tag_index: int) -> float | None:
+    async def tag_power_active_total(self, tag_index: int) -> float | None:
         """Total active power"""
-        return self.__read_float_32(0xBF3, tag_index)
+        return await self.__read_float_32(0xBF3, tag_index)
 
-    def tag_power_reactive(self, tag_index: int, phase: Phase) -> float | None:
+    async def tag_power_reactive(self, tag_index: int, phase: Phase) -> float | None:
         """Reactive power on phase"""
-        return self.__read_float_32(0xBF5 + phase.value, tag_index)
+        return await self.__read_float_32(0xBF5 + phase.value, tag_index)
 
-    def tag_power_reactive_total(self, tag_index: int) -> float | None:
+    async def tag_power_reactive_total(self, tag_index: int) -> float | None:
         """Total reactive power"""
-        return self.__read_float_32(0xBFB, tag_index)
+        return await self.__read_float_32(0xBFB, tag_index)
 
-    def tag_power_apparent(self, tag_index: int, phase: Phase) -> float | None:
+    async def tag_power_apparent(self, tag_index: int, phase: Phase) -> float | None:
         """Apparent power on phase"""
-        return self.__read_float_32(0xBFD + phase.value, tag_index)
+        return await self.__read_float_32(0xBFD + phase.value, tag_index)
 
-    def tag_power_apparent_total(self, tag_index: int) -> float | None:
+    async def tag_power_apparent_total(self, tag_index: int) -> float | None:
         """Total apparent power (arithmetric)"""
-        return self.__read_float_32(0xC03, tag_index)
+        return await self.__read_float_32(0xC03, tag_index)
 
     # Power Factor Metering Data
 
-    def tag_power_factor(self, tag_index: int, phase: Phase) -> float | None:
+    async def tag_power_factor(self, tag_index: int, phase: Phase) -> float | None:
         """Power factor on phase"""
-        return self.__read_float_32(0xC05 + phase.value, tag_index)
+        return await self.__read_float_32(0xC05 + phase.value, tag_index)
 
-    def tag_power_factor_total(self, tag_index: int) -> float | None:
+    async def tag_power_factor_total(self, tag_index: int) -> float | None:
         """Total power factor"""
-        return self.__read_float_32(0xC0B, tag_index)
+        return await self.__read_float_32(0xC0B, tag_index)
 
-    def tag_power_factor_sign_convention(self, tag_index: int) -> PowerFactorSignConvention:
+    async def tag_power_factor_sign_convention(
+        self, tag_index: int
+    ) -> PowerFactorSignConvention:
         """Power factor sign convention"""
-        return PowerFactorSignConvention(self.__read_int_16(0xC0D, tag_index))
+        return PowerFactorSignConvention(await self.__read_int_16(0xC0D, tag_index))
 
     # Frequency Metering Data
 
-    def tag_ac_frequency(self, tag_index: int) -> float | None:
+    async def tag_ac_frequency(self, tag_index: int) -> float | None:
         """AC frequency"""
-        return self.__read_float_32(0xC25, tag_index)
+        return await self.__read_float_32(0xC25, tag_index)
 
     # Device Temperature Metering Data
 
-    def tag_device_temperature(self, tag_index: int) -> float | None:
+    async def tag_device_temperature(self, tag_index: int) -> float | None:
         """Device internal temperature"""
-        return self.__read_float_32(0xC3B, tag_index)
+        return await self.__read_float_32(0xC3B, tag_index)
 
     # Energy Data – Legacy Zone
 
-    def tag_energy_active_delivered_plus_received_total(self, tag_index: int) -> int | None:
+    async def tag_energy_active_delivered_plus_received_total(
+        self, tag_index: int
+    ) -> int | None:
         """Total active energy delivered + received (not resettable)"""
-        return self.__read_int_64(0xC83, tag_index)
+        return await self.__read_int_64(0xC83, tag_index)
 
-    def tag_energy_active_delivered_plus_received_partial(self, tag_index: int) -> int | None:
+    async def tag_energy_active_delivered_plus_received_partial(
+        self, tag_index: int
+    ) -> int | None:
         """Partial active energy delivered + received (resettable)"""
-        return self.__read_int_64(0xCB7, tag_index)
+        return await self.__read_int_64(0xCB7, tag_index)
 
     # Energy Data – New Zone
 
-    def tag_reset_energy_active_delivered_partial(self, tag_index: int):
+    async def tag_reset_energy_active_delivered_partial(self, tag_index: int):
         """Set partial active energy delivered counter. The value returns to zero by PowerTag Link gateway"""
         if self.type_of_gateway == TypeOfGateway.PANEL_SERVER:
-            self.__write_int_64(0x1390, tag_index, 0)  # All
-            self.__write_int_64(0x13B8, tag_index, 0)  # Phase A
-            self.__write_int_64(0x13E0, tag_index, 0)  # Phase B
-            self.__write_int_64(0x1408, tag_index, 0)  # Phase C
+            await self.__write_int_64(0x1390, tag_index, 0)  # All
+            await self.__write_int_64(0x13B8, tag_index, 0)  # Phase A
+            await self.__write_int_64(0x13E0, tag_index, 0)  # Phase B
+            await self.__write_int_64(0x1408, tag_index, 0)  # Phase C
         else:
-            self.__write_int_64(0xCC3, tag_index, 0)
+            await self.__write_int_64(0xCC3, tag_index, 0)
 
-    def tag_reset_energy_active_received_partial(self, tag_index: int):
+    async def tag_reset_energy_active_received_partial(self, tag_index: int):
         """Set partial active energy received counter. The value returns to zero by PowerTag Link gateway."""
         if self.type_of_gateway == TypeOfGateway.PANEL_SERVER:
-            self.__write_int_64(0x1398, tag_index, 0)  # All
-            self.__write_int_64(0x13C0, tag_index, 0)  # Phase A
-            self.__write_int_64(0x13E8, tag_index, 0)  # Phase B
-            self.__write_int_64(0x1410, tag_index, 0)  # Phase C
+            await self.__write_int_64(0x1398, tag_index, 0)  # All
+            await self.__write_int_64(0x13C0, tag_index, 0)  # Phase A
+            await self.__write_int_64(0x13E8, tag_index, 0)  # Phase B
+            await self.__write_int_64(0x1410, tag_index, 0)  # Phase C
         else:
-            self.__write_int_64(0xCCB, tag_index, 0)
+            await self.__write_int_64(0xCCB, tag_index, 0)
 
-    def tag_reset_energy_reactive_delivered_partial(self, tag_index: int):
+    async def tag_reset_energy_reactive_delivered_partial(self, tag_index: int):
         """Set partial reactive energy delivered counter. The value returns to zero by PowerTag Link gateway."""
         if self.type_of_gateway == TypeOfGateway.PANEL_SERVER:
-            self.__write_int_64(0x1438, tag_index, 0)  # All
-            self.__write_int_64(0x1470, tag_index, 0)  # Phase A
-            self.__write_int_64(0x1498, tag_index, 0)  # Phase B
-            self.__write_int_64(0x14C0, tag_index, 0)  # Phase C
+            await self.__write_int_64(0x1438, tag_index, 0)  # All
+            await self.__write_int_64(0x1470, tag_index, 0)  # Phase A
+            await self.__write_int_64(0x1498, tag_index, 0)  # Phase B
+            await self.__write_int_64(0x14C0, tag_index, 0)  # Phase C
         else:
-            self.__write_int_64(0xCD3, tag_index, 0)
+            await self.__write_int_64(0xCD3, tag_index, 0)
 
-    def tag_reset_energy_reactive_received_partial(self, tag_index: int):
+    async def tag_reset_energy_reactive_received_partial(self, tag_index: int):
         """Set partial reactive energy received counter. The value returns to zero by PowerTag Link gateway."""
         if self.type_of_gateway == TypeOfGateway.PANEL_SERVER:
-            self.__write_int_64(0x1448, tag_index, 0)  # All
-            self.__write_int_64(0x1478, tag_index, 0)  # Phase A
-            self.__write_int_64(0x14A0, tag_index, 0)  # Phase B
-            self.__write_int_64(0x14C8, tag_index, 0)  # Phase C
+            await self.__write_int_64(0x1448, tag_index, 0)  # All
+            await self.__write_int_64(0x1478, tag_index, 0)  # Phase A
+            await self.__write_int_64(0x14A0, tag_index, 0)  # Phase B
+            await self.__write_int_64(0x14C8, tag_index, 0)  # Phase C
         else:
-            self.__write_int_64(0xCDB, tag_index, 0)
+            await self.__write_int_64(0xCDB, tag_index, 0)
 
-    def tag_reset_energy_apparent_partial(self, tag_index: int):
+    async def tag_reset_energy_apparent_partial(self, tag_index: int):
         """Set partial apparent energy counter. The value returns to zero by PowerTag Link gateway."""
         assert self.type_of_gateway == TypeOfGateway.PANEL_SERVER
-        self.__write_int_64(0x14F4, tag_index, 0)  # All
-        self.__write_int_64(0x150C, tag_index, 0)  # Phase A
-        self.__write_int_64(0x1534, tag_index, 0)  # Phase B
-        self.__write_int_64(0x155C, tag_index, 0)  # Phase C
+        await self.__write_int_64(0x14F4, tag_index, 0)  # All
+        await self.__write_int_64(0x150C, tag_index, 0)  # Phase A
+        await self.__write_int_64(0x1534, tag_index, 0)  # Phase B
+        await self.__write_int_64(0x155C, tag_index, 0)  # Phase C
 
-    def tag_energy_active_delivered_partial(self, tag_index: int) -> int | None:
+    async def tag_energy_active_delivered_partial(self, tag_index: int) -> int | None:
         """Active energy delivered (resettable)"""
         if self.type_of_gateway == TypeOfGateway.SMARTLINK:
-            return self.__read_int_64(0x0C87, tag_index)
+            return await self.__read_int_64(0x0C87, tag_index)
         else:
-            return self.__read_int_64(0x1390, tag_index)
+            return await self.__read_int_64(0x1390, tag_index)
 
-    def tag_energy_active_delivered_total(self, tag_index: int) -> int | None:
+    async def tag_energy_active_delivered_total(self, tag_index: int) -> int | None:
         """Active energy delivered count positively (not resettable)"""
         if self.type_of_gateway == TypeOfGateway.SMARTLINK:
-            return self.__read_int_64(0x0, tag_index)
+            return await self.__read_int_64(0x0, tag_index)
         else:
-            return self.__read_int_64(0x1394, tag_index)
+            return await self.__read_int_64(0x1394, tag_index)
 
-    def tag_energy_active_received_partial(self, tag_index: int) -> int | None:
+    async def tag_energy_active_received_partial(self, tag_index: int) -> int | None:
         """Active energy received (resettable)"""
         if self.type_of_gateway == TypeOfGateway.SMARTLINK:
-            return self.__read_int_64(0x0CC7, tag_index)
+            return await self.__read_int_64(0x0CC7, tag_index)
         else:
-            return self.__read_int_64(0x1398, tag_index)
+            return await self.__read_int_64(0x1398, tag_index)
 
-    def tag_energy_active_received_total(self, tag_index: int) -> int | None:
+    async def tag_energy_active_received_total(self, tag_index: int) -> int | None:
         """Active energy received count negatively (not resettable)"""
         if self.type_of_gateway == TypeOfGateway.SMARTLINK:
-            return self.__read_int_64(0x0C8B, tag_index)
+            return await self.__read_int_64(0x0C8B, tag_index)
         else:
-            return self.__read_int_64(0x139C, tag_index)
+            return await self.__read_int_64(0x139C, tag_index)
 
-    def tag_energy_active_delivered_partial_phase(self, tag_index: int, phase: Phase) -> int | None:
+    async def tag_energy_active_delivered_partial_phase(
+        self, tag_index: int, phase: Phase
+    ) -> int | None:
         """Active energy on phase delivered (resettable)"""
-        return self.__read_int_64(0x13B8 + phase.value * 0x14, tag_index)
+        return await self.__read_int_64(0x13B8 + phase.value * 0x14, tag_index)
 
-    def tag_energy_active_delivered_total_phase(self, tag_index: int, phase: Phase) -> int | None:
+    async def tag_energy_active_delivered_total_phase(
+        self, tag_index: int, phase: Phase
+    ) -> int | None:
         """Active energy on phase delivered (not resettable)"""
-        return self.__read_int_64(0x13BC + phase.value * 0x14, tag_index)
+        return await self.__read_int_64(0x13BC + phase.value * 0x14, tag_index)
 
-    def tag_energy_active_received_partial_phase(self, tag_index: int, phase: Phase) -> int | None:
+    async def tag_energy_active_received_partial_phase(
+        self, tag_index: int, phase: Phase
+    ) -> int | None:
         """Active energy on phase received (resettable)"""
-        return self.__read_int_64(0x13C0 + phase.value * 0x14, tag_index)
+        return await self.__read_int_64(0x13C0 + phase.value * 0x14, tag_index)
 
-    def tag_energy_active_received_total_phase(self, tag_index: int, phase: Phase) -> int | None:
+    async def tag_energy_active_received_total_phase(
+        self, tag_index: int, phase: Phase
+    ) -> int | None:
         """Active energy on phase received (not resettable)"""
-        return self.__read_int_64(0x13C4 + phase.value * 0x14, tag_index)
+        return await self.__read_int_64(0x13C4 + phase.value * 0x14, tag_index)
 
-    def tag_energy_reactive_delivered_partial(self, tag_index: int) -> int | None:
+    async def tag_energy_reactive_delivered_partial(self, tag_index: int) -> int | None:
         """Reactive energy delivered (resettable)"""
         if self.type_of_gateway == TypeOfGateway.SMARTLINK:
-            return self.__read_int_64(0x0CCF, tag_index)
+            return await self.__read_int_64(0x0CCF, tag_index)
         else:
-            return self.__read_int_64(0x1438, tag_index)
+            return await self.__read_int_64(0x1438, tag_index)
 
-    def tag_energy_reactive_delivered_total(self, tag_index: int) -> int | None:
+    async def tag_energy_reactive_delivered_total(self, tag_index: int) -> int | None:
         """Reactive energy delivered count positively (not resettable)"""
-        return self.__read_int_64(0x143C, tag_index)
+        return await self.__read_int_64(0x143C, tag_index)
 
-    def tag_energy_reactive_received_partial(self, tag_index: int) -> int | None:
+    async def tag_energy_reactive_received_partial(self, tag_index: int) -> int | None:
         """Reactive energy received (resettable)"""
         if self.type_of_gateway == TypeOfGateway.SMARTLINK:
-            return self.__read_int_64(0x0CD7, tag_index)
+            return await self.__read_int_64(0x0CD7, tag_index)
         else:
-            return self.__read_int_64(0x1488, tag_index)
+            return await self.__read_int_64(0x1488, tag_index)
 
-    def tag_energy_reactive_received_total(self, tag_index: int) -> int | None:
+    async def tag_energy_reactive_received_total(self, tag_index: int) -> int | None:
         """Reactive energy received count negatively (not resettable)"""
-        return self.__read_int_64(0x144C, tag_index)
+        return await self.__read_int_64(0x144C, tag_index)
 
-    def tag_energy_reactive_delivered_partial_phase(self, tag_index: int, phase: Phase) -> int | None:
+    async def tag_energy_reactive_delivered_partial_phase(
+        self, tag_index: int, phase: Phase
+    ) -> int | None:
         """Reactive energy on phase delivered (resettable)"""
-        return self.__read_int_64(0x1470 + phase.value * 0x14, tag_index)
+        return await self.__read_int_64(0x1470 + phase.value * 0x14, tag_index)
 
-    def tag_energy_reactive_delivered_total_phase(self, tag_index: int, phase: Phase) -> int | None:
+    async def tag_energy_reactive_delivered_total_phase(
+        self, tag_index: int, phase: Phase
+    ) -> int | None:
         """Reactive energy on phase delivered (not resettable)"""
-        return self.__read_int_64(0x1474 + phase.value * 0x14, tag_index)
+        return await self.__read_int_64(0x1474 + phase.value * 0x14, tag_index)
 
-    def tag_energy_reactive_received_partial_phase(self, tag_index: int, phase: Phase) -> int | None:
+    async def tag_energy_reactive_received_partial_phase(
+        self, tag_index: int, phase: Phase
+    ) -> int | None:
         """Reactive energy on phase received (resettable)"""
-        return self.__read_int_64(0x1478 + phase.value * 0x14, tag_index)
+        return await self.__read_int_64(0x1478 + phase.value * 0x14, tag_index)
 
-    def tag_energy_reactive_received_total_phase(self, tag_index: int, phase: Phase) -> int | None:
+    async def tag_energy_reactive_received_total_phase(
+        self, tag_index: int, phase: Phase
+    ) -> int | None:
         """Reactive energy on phase received (not resettable)"""
-        return self.__read_int_64(0x147C + phase.value * 0x14, tag_index)
+        return await self.__read_int_64(0x147C + phase.value * 0x14, tag_index)
 
-    def tag_energy_apparent_partial(self, tag_index: int) -> int | None:
+    async def tag_energy_apparent_partial(self, tag_index: int) -> int | None:
         """Apparent energy delivered + received (resettable)"""
-        return self.__read_int_64(0x14F4, tag_index)
+        return await self.__read_int_64(0x14F4, tag_index)
 
-    def tag_energy_apparent_total(self, tag_index: int) -> int | None:
+    async def tag_energy_apparent_total(self, tag_index: int) -> int | None:
         """Apparent energy delivered + received (not resettable)"""
-        return self.__read_int_64(0x14F8, tag_index)
+        return await self.__read_int_64(0x14F8, tag_index)
 
-    def tag_energy_apparent_partial_phase(self, tag_index: int, phase: Phase) -> int | None:
+    async def tag_energy_apparent_partial_phase(
+        self, tag_index: int, phase: Phase
+    ) -> int | None:
         """Apparent energy on phase (resettable)"""
-        return self.__read_int_64(0x150C + phase.value * 0x14, tag_index)
+        return await self.__read_int_64(0x150C + phase.value * 0x14, tag_index)
 
-    def tag_energy_apparent_total_phase(self, tag_index: int, phase: Phase) -> int | None:
+    async def tag_energy_apparent_total_phase(
+        self, tag_index: int, phase: Phase
+    ) -> int | None:
         """Apparent energy on phase A (not resettable)"""
-        return self.__read_int_64(0x1510 + phase.value * 0x14, tag_index)
+        return await self.__read_int_64(0x1510 + phase.value * 0x14, tag_index)
 
     # Power Demand Data
 
-    def tag_power_active_demand_total(self, tag_index: int) -> float | None:
+    async def tag_power_active_demand_total(self, tag_index: int) -> float | None:
         """Demand total active power"""
-        return self.__read_float_32(0x0EB5, tag_index)
+        return await self.__read_float_32(0x0EB5, tag_index)
 
-    def tag_power_active_power_demand_total_maximum(self, tag_index: int) -> float | None:
+    async def tag_power_active_power_demand_total_maximum(
+        self, tag_index: int
+    ) -> float | None:
         """Maximum Demand total active power"""
-        return self.__read_float_32(0x0EB9, tag_index)
+        return await self.__read_float_32(0x0EB9, tag_index)
 
-    def tag_power_active_demand_total_maximum_timestamp(self, tag_index: int) -> datetime | None:
+    async def tag_power_active_demand_total_maximum_timestamp(
+        self, tag_index: int
+    ) -> datetime | None:
         """Maximum Demand total active power"""
-        return self.__read_date_time(0x0EBB, tag_index)
+        return await self.__read_date_time(0x0EBB, tag_index)
 
     # Alarm
 
-    def tag_is_alarm_valid(self, tag_index: int) -> AlarmDetails | bool | None:
+    async def tag_is_alarm_valid(self, tag_index: int) -> AlarmDetails | bool | None:
         """Validity of the alarm bitmap"""
         if self.type_of_gateway is TypeOfGateway.PANEL_SERVER:
-            return AlarmDetails(self.__read_int_32(0xCE1, tag_index))
+            return AlarmDetails(await self.__read_int_32(0xCE1, tag_index) or 0)
         else:
-            return (self.__read_int_32(0xCE1, tag_index) & 0b1) != 0
+            return (await self.__read_int_32(0xCE1, tag_index) & 0b1) != 0
 
-    def tag_get_alarm(self, tag_index: int) -> AlarmDetails:
+    async def tag_get_alarm(self, tag_index: int) -> AlarmDetails:
         """Alarms"""
-        return AlarmDetails(self.__read_int_32(0xCE3, tag_index))
+        return AlarmDetails(await self.__read_int_32(0xCE3, tag_index) or 0)
 
-    def tag_current_at_voltage_loss(self, tag_index: int, phase: Phase) -> float | None:
+    async def tag_current_at_voltage_loss(
+        self, tag_index: int, phase: Phase
+    ) -> float | None:
         """RMS current on phase at voltage loss (last RMS current measured when voltage loss occurred)"""
-        return self.__read_float_32(0xCE5 + phase.value, tag_index)
+        return await self.__read_float_32(0xCE5 + phase.value, tag_index)
 
     # Load Operating Time
 
-    def tag_load_operating_time(self, tag_index: int) -> int | None:
+    async def tag_load_operating_time(self, tag_index: int) -> int | None:
         """Load operating time counter."""
-        return self.__read_int_32(0xCEB, tag_index)
+        return await self.__read_int_32(0xCEB, tag_index)
 
-    def tag_load_operating_time_active_power_threshold(self, tag_index: int) -> float | None:
+    async def tag_load_operating_time_active_power_threshold(
+        self, tag_index: int
+    ) -> float | None:
         """Active power threshold for Load operating time counter. Counter starts above the threshold value."""
-        return self.__read_float_32(0xCED, tag_index)
+        return await self.__read_float_32(0xCED, tag_index)
 
-    def tag_load_operating_time_start(self, tag_index: int) -> datetime | None:
+    async def tag_load_operating_time_start(self, tag_index: int) -> datetime | None:
         """Date and time stamp of last Set or reset of Load operating time counter."""
-        return self.__read_date_time(0xCEF, tag_index)
+        return await self.__read_date_time(0xCEF, tag_index)
 
     # Configuration Registers
 
-    def tag_name(self, tag_index: int) -> str | None:
+    async def tag_name(self, tag_index: int) -> str | None:
         """User application name of the wireless device. The user can enter maximum 20 characters."""
-        return self.__read_string(0x7918, 10, tag_index)
+        return await self.__read_string(0x7918, 10, tag_index)
 
-    def tag_circuit(self, tag_index: int) -> str:
+    async def tag_circuit(self, tag_index: int) -> str | None:
         """Circuit identifier of the wireless device. The user can enter maximum five characters."""
-        return self.__read_string(0x7922, 3, tag_index)
+        return await self.__read_string(0x7922, 3, tag_index)
 
-    def tag_usage(self, tag_index: int) -> DeviceUsage:
+    async def tag_usage(self, tag_index: int) -> DeviceUsage:
         """Indicates the usage of the wireless device."""
-        return DeviceUsage(self.__read_int_16(0x7925, tag_index))
+        return DeviceUsage(await self.__read_int_16(0x7925, tag_index))
 
-    def tag_phase_sequence(self, tag_index: int) -> PhaseSequence:
+    async def tag_phase_sequence(self, tag_index: int) -> PhaseSequence:
         """Phase sequence."""
-        return PhaseSequence(self.__read_int_16(0x7926, tag_index))
+        return PhaseSequence(await self.__read_int_16(0x7926, tag_index))
 
-    def tag_position(self, tag_index: int) -> Position:
+    async def tag_position(self, tag_index: int) -> Position:
         """Mounting position"""
-        return Position(self.__read_int_16(0x7927, tag_index))
+        return Position(await self.__read_int_16(0x7927, tag_index))
 
-    def tag_circuit_diagnostic(self, tag_index: int) -> Position:
+    async def tag_circuit_diagnostic(self, tag_index: int) -> Position:
         """Circuit diagnostics"""
-        return Position(self.__read_int_16(0x7928, tag_index))
+        return Position(await self.__read_int_16(0x7928, tag_index))
 
-    def tag_rated_current(self, tag_index: int) -> int | None:
+    async def tag_rated_current(self, tag_index: int) -> int | None:
         """Rated current of the protective device to the wireless device"""
-        return self.__read_int_16(0x7929, tag_index)
+        return await self.__read_int_16(0x7929, tag_index)
 
-    def tag_electrical_network_system_type(self, tag_index: int) -> ElectricalNetworkSystemType:
-        code = self.__read_int_16(0x792A, tag_index)
+    async def tag_electrical_network_system_type(
+        self, tag_index: int
+    ) -> ElectricalNetworkSystemType | None:
+        code = await self.__read_int_16(0x792A, tag_index)
         system_type = [e for e in ElectricalNetworkSystemType if e.value[0] == code]
         return system_type[0] if system_type else None
 
-    def tag_rated_voltage(self, tag_index: int) -> float | None:
+    async def tag_rated_voltage(self, tag_index: int) -> float | None:
         """Rated voltage"""
         if self.type_of_gateway == TypeOfGateway.SMARTLINK:
             return None
-        return self.__read_float_32(0x792B, tag_index)
+        return await self.__read_float_32(0x792B, tag_index)
 
-    def tag_reset_peak_demands(self, tag_index: int):
+    async def tag_reset_peak_demands(self, tag_index: int):
         """Reset All Peak Demands"""
-        self.__write_int_16(0x792E, tag_index, 1)
+        await self.__write_int_16(0x792E, tag_index, 1)
 
-    def tag_power_supply_type(self, tag_index: int) -> Position:
+    async def tag_power_supply_type(self, tag_index: int) -> Position:
         """Power supply type"""
         if self.type_of_gateway == TypeOfGateway.SMARTLINK:
             return Position.INVALID
-        return Position(self.__read_int_16(0x792F, tag_index))
+        return Position(await self.__read_int_16(0x792F, tag_index))
 
     # Device identification
 
-    def tag_device_identification(self, tag_index: int):
+    async def tag_device_identification(self, tag_index: int):
         return self.__identify(tag_index)
 
-    def tag_product_identifier(self, tag_index: int) -> int | None:
+    async def tag_product_identifier(self, tag_index: int) -> int | None:
         """Wireless device code type"""
         if self.type_of_gateway == TypeOfGateway.SMARTLINK:
             try:
-                return self.__read_int_16(0x7930, tag_index)
+                return await self.__read_int_16(0x7930, tag_index)
 
             except ConnectionError as e:
                 _LOGGER.warning(
                     f"Could not read product type of device on slave ID {tag_index}: {str(e)}. "
                     f"Might be because there's device, or an actual error. Either way we're stopping the search.",
-                    exc_info=True
+                    exc_info=True,
                 )
                 return None
 
         raise NotImplementedError()
 
-    def tag_product_type(self, tag_index: int) -> ProductType | None:
+    async def tag_product_type(self, tag_index: int) -> ProductType | None:
         """Wireless device code type"""
         if self.type_of_gateway == TypeOfGateway.SMARTLINK:
             try:
                 identifier = self.__read_int_16(0x7930, tag_index)
                 if not identifier:
-                    _LOGGER.error("The powertag returned an error while requesting its product type")
+                    _LOGGER.error(
+                        "The powertag returned an error while requesting its product type"
+                    )
                     return None
 
                 product_type = [p for p in ProductType if p.value[0] == identifier]
                 if not product_type:
-                    _LOGGER.warning(
-                        f"Unknown product type: {identifier}"
-                    )
+                    _LOGGER.warning(f"Unknown product type: {identifier}")
                     return None
 
             except ConnectionError as e:
                 _LOGGER.warning(
                     f"Could not read product type of device on slave ID {tag_index}: {str(e)}. "
                     f"Might be because there's device, or an actual error. Either way we're stopping the search.",
-                    exc_info=True
+                    exc_info=True,
                 )
                 return None
         else:
             identifier = self.__read_int_16(0x7937, tag_index)
             product_type = [p for p in ProductType if p.value[1] == identifier]
             if not product_type:
-                _LOGGER.warning(
-                    f"Unknown product type: {identifier}"
-                )
+                _LOGGER.warning(f"Unknown product type: {identifier}")
                 return None
 
         return product_type[0] if product_type else None
 
-    def tag_slave_address(self, tag_index: int) -> int | None:
+    async def tag_slave_address(self, tag_index: int) -> int | None:
         """Virtual Modbus server address"""
-        return self.__read_int_16(0x7931, tag_index)
+        return await self.__read_int_16(0x7931, tag_index)
 
-    def tag_rf_id(self, tag_index: int) -> int | None:
+    async def tag_rf_id(self, tag_index: int) -> int | None:
         """Wireless device Radio Frequency Identifier"""
-        return self.__read_int_64(0x7932, tag_index)
+        return await self.__read_int_64(0x7932, tag_index)
 
-    def tag_vendor_name(self, tag_index: int) -> str | None:
+    async def tag_vendor_name(self, tag_index: int) -> str | None:
         """Vendor name"""
-        return self.__read_string(0x7944, 16, tag_index)
+        return await self.__read_string(0x7944, 16, tag_index)
 
-    def tag_product_code(self, tag_index: int) -> str | None:
+    async def tag_product_code(self, tag_index: int) -> str | None:
         """Wireless device commercial reference"""
         if self.type_of_gateway is TypeOfGateway.SMARTLINK:
             return None
-        return self.__read_string(0x7954, 16, tag_index)
+        return await self.__read_string(0x7954, 16, tag_index)
 
-    def tag_firmware_revision(self, tag_index: int) -> str | None:
+    async def tag_firmware_revision(self, tag_index: int) -> str | None:
         """Firmware revision"""
-        return self.__read_string(0x7964, 6, tag_index)
+        return await self.__read_string(0x7964, 6, tag_index)
 
-    def tag_hardware_revision(self, tag_index: int) -> str | None:
+    async def tag_hardware_revision(self, tag_index: int) -> str | None:
         """Hardware revision"""
-        return self.__read_string(0x796A, 6, tag_index)
+        return await self.__read_string(0x796A, 6, tag_index)
 
     def tag_serial_number(self, tag_index: int) -> str | None:
         """Serial number"""
-        return self.__read_string(0x7970, 10, tag_index)
+        return self.__sync_read_string(0x7970, 10, tag_index)
 
-    def tag_product_range(self, tag_index: int) -> str | None:
+    async def tag_product_range(self, tag_index: int) -> str | None:
         """Product range"""
-        return self.__read_string(0x797A, 8, tag_index)
+        return await self.__read_string(0x797A, 8, tag_index)
 
-    def tag_product_model(self, tag_index: int) -> str | None:
+    async def tag_product_model(self, tag_index: int) -> str | None:
         """Product model"""
-        return self.__read_string(0x7982, 8, tag_index)
+        return await self.__read_string(0x7982, 8, tag_index)
 
-    def tag_product_family(self, tag_index: int) -> str | None:
+    async def tag_product_family(self, tag_index: int) -> str | None:
         """Product family"""
         if self.type_of_gateway is TypeOfGateway.SMARTLINK:
             return None
-        return self.__read_string(0x798A, 8, tag_index)
+        return await self.__read_string(0x798A, 8, tag_index)
 
     # Diagnostic Data Registers
 
-    def tag_radio_communication_valid(self, tag_index: int) -> bool:
+    async def tag_radio_communication_valid(self, tag_index: int) -> bool:
         """Validity of the RF communication between PowerTag system and PowerTag Link gateway status."""
-        return self.__read_int_16(0x79A8, tag_index) != 0
+        return await self.__read_int_16(0x79A8, tag_index) != 0
 
-    def tag_wireless_communication_valid(self, tag_index: int) -> bool:
+    async def tag_wireless_communication_valid(self, tag_index: int) -> bool:
         """Communication status between PowerTag Link gateway and wireless devices."""
-        return self.__read_int_16(0x79A9, tag_index) != 0
+        return await self.__read_int_16(0x79A9, tag_index) != 0
 
-    def tag_radio_per_tag(self, tag_index: int) -> float | None:
+    async def tag_radio_per_tag(self, tag_index: int) -> float | None:
         """Packet Error Rate (PER) of the device, received by PowerTag Link gateway"""
-        return self.__read_float_32(0x79B4, tag_index)
+        return await self.__read_float_32(0x79B4, tag_index)
 
-    def tag_radio_rssi_inside_tag(self, tag_index: int) -> float | None:
+    async def tag_radio_rssi_inside_tag(self, tag_index: int) -> float | None:
         """RSSI of the device, received by PowerTag Link gateway"""
-        return self.__read_float_32(0x79B6, tag_index)
+        return await self.__read_float_32(0x79B6, tag_index)
 
-    def tag_radio_lqi_tag(self, tag_index: int) -> int | None:
+    async def tag_radio_lqi_tag(self, tag_index: int) -> int | None:
         """Link Quality Indicator (LQI) of the device, received by PowerTag Link gateway"""
-        return self.__read_int_16(0x79B8, tag_index)
+        return await self.__read_int_16(0x79B8, tag_index)
 
-    def tag_radio_per_gateway(self, tag_index: int) -> float | None:
+    async def tag_radio_per_gateway(self, tag_index: int) -> float | None:
         """PER of gateway, calculated inside the PowerTag Link gateway"""
-        return self.__read_float_32(0x79AF, tag_index)
+        return await self.__read_float_32(0x79AF, tag_index)
 
-    def tag_radio_rssi_inside_gateway(self, tag_index: int) -> float | None:
+    async def tag_radio_rssi_inside_gateway(self, tag_index: int) -> float | None:
         """Radio Signal Strength Indicator (RSSI) of gateway, calculated inside the PowerTag Link gateway"""
-        return self.__read_float_32(0x79B1, tag_index)
+        return await self.__read_float_32(0x79B1, tag_index)
 
-    def tag_radio_lqi_gateway(self, tag_index: int) -> float | None:
+    async def tag_radio_lqi_gateway(self, tag_index: int) -> float | None:
         """LQI of gateway, calculated insider the PowerTag Link gateway"""
-        return self.__read_int_16(0x79B3, tag_index)
+        return await self.__read_int_16(0x79B3, tag_index)
 
-    def tag_radio_per_maximum(self, tag_index: int) -> float | None:
+    async def tag_radio_per_maximum(self, tag_index: int) -> float | None:
         """PER–Maximum value between device and gateway"""
-        return self.__read_float_32(0x79B4, tag_index)
+        return await self.__read_float_32(0x79B4, tag_index)
 
-    def tag_radio_rssi_minimum(self, tag_index: int) -> float | None:
+    async def tag_radio_rssi_minimum(self, tag_index: int) -> float | None:
         """RSSI–Minimal value between device and gateway"""
-        return self.__read_float_32(0x79B6, tag_index)
+        return await self.__read_float_32(0x79B6, tag_index)
 
-    def tag_radio_lqi_minimum(self, tag_index: int) -> float | None:
+    async def tag_radio_lqi_minimum(self, tag_index: int) -> float | None:
         """LQI–Minimal value between device and gateway"""
-        return self.__read_int_16(0x79B8, tag_index)
+        return await self.__read_int_16(0x79B8, tag_index)
 
     # Environmental sensors
-    def env_battery_voltage(self, tag_index: int) -> float | None:
+    async def env_battery_voltage(self, tag_index: int) -> float | None:
         """Battery voltage"""
-        return self.__read_float_32(0x0CF3, tag_index)
+        return await self.__read_float_32(0x0CF3, tag_index)
 
-    def env_temperature(self, tag_index: int) -> float | None:
+    async def env_temperature(self, tag_index: int) -> float | None:
         """Temperature value"""
-        return self.__read_float_32(0x0FA0, tag_index)
+        return await self.__read_float_32(0x0FA0, tag_index)
 
-    def env_temperature_maximum(self, tag_index: int) -> float | None:
+    async def env_temperature_maximum(self, tag_index: int) -> float | None:
         """Maximum value that the device is able to read (maximum measurable temperature)."""
-        return self.__read_float_32(0x0FA2, tag_index)
+        return await self.__read_float_32(0x0FA2, tag_index)
 
-    def env_temperature_minimum(self, tag_index: int) -> float | None:
+    async def env_temperature_minimum(self, tag_index: int) -> float | None:
         """Minimum value that the device is able to read (minimum measurable temperature)."""
-        return self.__read_float_32(0x0FA4, tag_index)
+        return await self.__read_float_32(0x0FA4, tag_index)
 
-    def env_humidity(self, tag_index: int) -> float | None:
-        """"Relative humidity value Example: 50% represented as 0.50"""
-        return self.__read_float_32(0x0FA6, tag_index)
+    async def env_humidity(self, tag_index: int) -> float | None:
+        """ "Relative humidity value Example: 50% represented as 0.50"""
+        return await self.__read_float_32(0x0FA6, tag_index)
 
-    def env_humidity_maximum(self, tag_index: int) -> float | None:
+    async def env_humidity_maximum(self, tag_index: int) -> float | None:
         """Maximum value that the device is able to read (maximum measurable humidity)."""
-        return self.__read_float_32(0x0FA8, tag_index)
+        return await self.__read_float_32(0x0FA8, tag_index)
 
-    def env_humidity_minimum(self, tag_index: int) -> float | None:
+    async def env_humidity_minimum(self, tag_index: int) -> float | None:
         """Minimum value that the device is able to read (minimum measurable humidity)."""
-        return self.__read_float_32(0x0FAA, tag_index)
+        return await self.__read_float_32(0x0FAA, tag_index)
 
-    def env_co2(self, tag_index: int) -> float | None:
-        """CO2 (Example:5000 ppm represented as 0,005) """
-        return self.__read_float_32(0x0FAE, tag_index)
+    async def env_co2(self, tag_index: int) -> float | None:
+        """CO2 (Example:5000 ppm represented as 0,005)"""
+        return await self.__read_float_32(0x0FAE, tag_index)
 
     # Identification and Status Register
 
-    def product_id(self) -> int | None:
+    async def product_id(self) -> int | None:
         """Product ID of the synthesis table"""
         if self.type_of_gateway is TypeOfGateway.POWERTAG_LINK:
-            return self.__read_int_16(0x0001, self.synthetic_slave_id)
+            return await self.__read_int_16(0x0001, self.synthetic_slave_id)
         elif self.type_of_gateway is TypeOfGateway.PANEL_SERVER:
-            return self.__read_int_16(0xF002, GATEWAY_SLAVE_ID)
+            return await self.__read_int_16(0xF002, GATEWAY_SLAVE_ID)
         else:
             return None
 
-    def manufacturer(self) -> str | None:
+    async def manufacturer(self) -> str | None:
         """Product ID of the synthesis table"""
         if self.type_of_gateway is TypeOfGateway.POWERTAG_LINK:
-            return self.__read_string(0x0002, 16, self.synthetic_slave_id)
+            return await self.__read_string(0x0002, 16, self.synthetic_slave_id)
         elif self.type_of_gateway is TypeOfGateway.PANEL_SERVER:
-            return self.__read_string(0x009F, 16, GATEWAY_SLAVE_ID)
+            return await self.__read_string(0x009F, 16, GATEWAY_SLAVE_ID)
         elif self.type_of_gateway is TypeOfGateway.SMARTLINK:
             return "Schneider Electric"
         else:
             return None
 
-    def product_code(self) -> str | None:
+    async def product_code(self) -> str | None:
         """Commercial reference of the gateway"""
         if self.type_of_gateway is TypeOfGateway.POWERTAG_LINK:
-            return self.__read_string(0x0012, 16, self.synthetic_slave_id)
+            return await self.__read_string(0x0012, 16, self.synthetic_slave_id)
         elif self.type_of_gateway is TypeOfGateway.PANEL_SERVER:
-            return self.__read_string(0x003C, 16, GATEWAY_SLAVE_ID)
+            return await self.__read_string(0x003C, 16, GATEWAY_SLAVE_ID)
         elif self.type_of_gateway is TypeOfGateway.SMARTLINK:
             return "A9XMWA20"
         else:
             return None
 
-    def product_range(self) -> str | None:
+    async def product_range(self) -> str | None:
         """Product range of the gateway"""
         if self.type_of_gateway is TypeOfGateway.POWERTAG_LINK:
-            return self.__read_string(0x0022, 8, self.synthetic_slave_id)
+            return await self.__read_string(0x0022, 8, self.synthetic_slave_id)
         elif self.type_of_gateway is TypeOfGateway.PANEL_SERVER:
-            return self.__read_string(0x000A, 16, GATEWAY_SLAVE_ID)
+            return await self.__read_string(0x000A, 16, GATEWAY_SLAVE_ID)
         else:
             return "Unknown"
 
-    def product_model(self) -> str | None:
+    async def product_model(self) -> str | None:
         """Product model"""
         if self.type_of_gateway is TypeOfGateway.POWERTAG_LINK:
-            return self.__read_string(0x002A, 8, self.synthetic_slave_id)
+            return await self.__read_string(0x002A, 8, self.synthetic_slave_id)
         elif self.type_of_gateway is TypeOfGateway.PANEL_SERVER:
-            return self.__read_string(0xF003, 16, GATEWAY_SLAVE_ID)
+            return await self.__read_string(0xF003, 16, GATEWAY_SLAVE_ID)
         else:
             return "Smartlink SI D"
 
-    def name(self) -> str | None:
+    async def name(self) -> str | None:
         """Asset name"""
         if self.type_of_gateway is TypeOfGateway.POWERTAG_LINK:
-            return self.__read_string(0x0032, 10, self.synthetic_slave_id)
+            return await self.__read_string(0x0032, 10, self.synthetic_slave_id)
         elif self.type_of_gateway is TypeOfGateway.PANEL_SERVER:
-            return self.__read_string(0x1605, 32, GATEWAY_SLAVE_ID)
+            return await self.__read_string(0x1605, 32, GATEWAY_SLAVE_ID)
         else:
             return "Unknown"
 
-    def product_vendor_url(self) -> str | None:
+    async def product_vendor_url(self) -> str | None:
         """Vendor URL"""
         if self.type_of_gateway is TypeOfGateway.POWERTAG_LINK:
-            return self.__read_string(0x003C, 17, self.synthetic_slave_id)
+            return await self.__read_string(0x003C, 17, self.synthetic_slave_id)
         elif self.type_of_gateway is TypeOfGateway.PANEL_SERVER:
-            return self.__read_string(0x002A, 17, GATEWAY_SLAVE_ID)
+            return await self.__read_string(0x002A, 17, GATEWAY_SLAVE_ID)
         else:
             return "Unknown"
 
     # Wireless Configured Devices – 100 Devices
 
-    def modbus_address_of_node(self, node_index: int) -> int | None:
+    async def modbus_address_of_node(self, node_index: int) -> int | None:
         if self.type_of_gateway is TypeOfGateway.SMARTLINK:
             return 150 + node_index - 1
         elif self.type_of_gateway is TypeOfGateway.POWERTAG_LINK:
-            return self.__read_int_16(0x012C + node_index - 1, self.synthetic_slave_id)
+            return await self.__read_int_16(
+                0x012C + node_index - 1, self.synthetic_slave_id
+            )
         else:
-            return self.__read_int_16(0x01F8 + (node_index - 1) * 5, GATEWAY_SLAVE_ID)
+            return await self.__read_int_16(
+                0x01F8 + (node_index - 1) * 5, GATEWAY_SLAVE_ID
+            )
 
     # Helper functions
 
-    def round_to_significant_digits(self, number: float, significant_digits: int):
+    @staticmethod
+    def round_to_significant_digits(number: float, significant_digits: int):
         if number == 0:
             return 0  # Early return to handle 0 explicitly
 
@@ -861,76 +916,142 @@ class SchneiderModbus:
         self.client.write_registers(address, registers, device_id=slave_id)
 
     def __read(self, address: int, count: int, slave_id: int):
-        response = self.client.read_holding_registers(address=address, count=count, device_id=slave_id)
+        response = self.client.read_holding_registers(
+            address=address, count=count, device_id=slave_id
+        )
         if response.isError():
             raise ConnectionError(str(response))
         return response.registers
 
-    def __identify(self, slave_id: int):
+    async def __async_read(self, address: int, count: int, slave_id: int) -> list[int]:
+        loop = asyncio.get_event_loop()
+        try:
+            return await asyncio.wait_for(
+                loop.run_in_executor(None, self.__read, address, count, slave_id),
+                timeout=5.0,
+            )
+        except asyncio.TimeoutError:
+            _LOGGER.debug(f"Timeout when fetching address {address} from slave ID {slave_id}")
+
+    async def __async_write(
+        self, address: int, registers: list[int], slave_id: int
+    ) -> None:
+        loop = asyncio.get_event_loop()
+        try:
+            await asyncio.wait_for(
+                loop.run_in_executor(None, self.__write, address, registers, slave_id),
+                timeout=5.0,
+            )
+        except asyncio.TimeoutError:
+            _LOGGER.debug(f"Timeout when writing to address {address} from slave ID {slave_id}")
+
+    async def __identify(self, _: int):
         # data = self.client.read_device_information(read_code=DeviceInformation.REGULAR, device_id=0xFF)
         for i in range(0xFF):
             try:
-                response = self.client.read_device_information(read_code=DeviceInformation.REGULAR, device_id=i)
+                response = self.client.read_device_information(
+                    read_code=DeviceInformation.REGULAR, device_id=i
+                )
                 print(f"Yes {i}: {response}")
             except ExceptionResponse as e:
                 print(f"Not {i}: {e}")
         # return self.client.read_device_information(read_code=DeviceInformation.REGULAR, device_id=slave_id)
 
-    def __read_string(self, address: int, count: int, slave_id: int) -> str | None:
+    async def __read_string(self, address: int, count: int, slave_id: int) -> str | None:
+        registers = await self.__async_read(address, count, slave_id)
+        return self.client.convert_from_registers(
+            registers, ModbusClientMixin.DATATYPE.STRING
+        )
+
+    def __sync_read_string(self, address: int, count: int, slave_id: int) -> str | None:
         registers = self.__read(address, count, slave_id)
-        return self.client.convert_from_registers(registers, ModbusClientMixin.DATATYPE.STRING)
+        return self.client.convert_from_registers(
+            registers, ModbusClientMixin.DATATYPE.STRING
+        )
 
-    def __write_string(self, address: int, slave_id: int, string: str):
-        registers = self.client.convert_to_registers(string.ljust(20, '\x00'), ModbusClientMixin.DATATYPE.STRING)
-        self.__write(address, registers, slave_id)
 
-    def __read_float_32(self, address: int, slave_id: int) -> float | None:
-        registers = self.__read(address, 2, slave_id)
-        result = self.client.convert_from_registers(registers, ModbusClientMixin.DATATYPE.FLOAT32)
-        return self.round_to_significant_digits(result, 7) if not math.isnan(result) else None
+    async def __write_string(self, address: int, slave_id: int, string: str):
+        registers = self.client.convert_to_registers(
+            string.ljust(20, "\x00"), ModbusClientMixin.DATATYPE.STRING
+        )
+        await self.__async_write(address, registers, slave_id)
 
-    def __read_int_16(self, address: int, slave_id: int) -> int | None:
-        registers = self.__read(address, 1, slave_id)
-        result = self.client.convert_from_registers(registers, ModbusClientMixin.DATATYPE.UINT16)
+    async def __read_float_32(self, address: int, slave_id: int) -> float | None:
+        registers = await self.__async_read(address, 2, slave_id)
+        result = self.client.convert_from_registers(
+            registers, ModbusClientMixin.DATATYPE.FLOAT32
+        )
+        return (
+            self.round_to_significant_digits(result, 7)
+            if not math.isnan(result)
+            else None
+        )
+
+    async def __read_int_16(self, address: int, slave_id: int) -> int | None:
+        registers = await self.__async_read(address, 1, slave_id)
+        result = self.client.convert_from_registers(
+            registers, ModbusClientMixin.DATATYPE.UINT16
+        )
         return result if result != 0xFFFF else None
 
-    def __write_int_16(self, address: int, slave_id: int, value: int):
-        registers = self.client.convert_to_registers(value, ModbusClientMixin.DATATYPE.UINT16)
-        self.__write(address, registers, slave_id)
+    async def __write_int_16(self, address: int, slave_id: int, value: int):
+        registers = self.client.convert_to_registers(
+            value, ModbusClientMixin.DATATYPE.UINT16
+        )
+        await self.__async_write(address, registers, slave_id)
 
-    def __read_int_32(self, address: int, slave_id: int) -> int | None:
+    async def __read_int_32(self, address: int, slave_id: int) -> int | None:
         registers = self.__read(address, 2, slave_id)
-        result = self.client.convert_from_registers(registers, ModbusClientMixin.DATATYPE.UINT32)
+        result = self.client.convert_from_registers(
+            registers, ModbusClientMixin.DATATYPE.UINT32
+        )
         return result if result != 0x8000_0000 else None
 
-    def __read_int_64(self, address: int, slave_id: int) -> int | None:
+    async def __read_int_64(self, address: int, slave_id: int) -> int | None:
         registers = self.__read(address, 4, slave_id)
-        result = self.client.convert_from_registers(registers, ModbusClientMixin.DATATYPE.UINT64)
+        result = self.client.convert_from_registers(
+            registers, ModbusClientMixin.DATATYPE.UINT64
+        )
         return result if result != 0x8000_0000_0000_0000 else None
 
-    def __write_int_64(self, address: int, slave_id: int, value: int):
-        registers = self.client.convert_to_registers(value, ModbusClientMixin.DATATYPE.UINT64)
-        self.__write(address, registers, slave_id)
+    async def __write_int_64(self, address: int, slave_id: int, value: int):
+        registers = self.client.convert_to_registers(
+            value, ModbusClientMixin.DATATYPE.UINT64
+        )
+        await self.__async_write(address, registers, slave_id)
 
-    def __read_date_time(self, address: int, slave_id) -> datetime | None:
-        registers = self.__read(address, 4, slave_id)
+    async def __read_date_time(self, address: int, slave_id) -> datetime | None:
+        registers = await self.__async_read(address, 4, slave_id)
 
-        year_raw = self.client.convert_from_registers(registers[0:1], ModbusClientMixin.DATATYPE.UINT16)
+        year_raw = self.client.convert_from_registers(
+            registers[0:1], ModbusClientMixin.DATATYPE.UINT16
+        )
         year = (year_raw & 0b0111_1111) + 2000
 
-        day_month = self.client.convert_from_registers(registers[1:2], ModbusClientMixin.DATATYPE.UINT16)
+        day_month = self.client.convert_from_registers(
+            registers[1:2], ModbusClientMixin.DATATYPE.UINT16
+        )
         day = day_month & 0b0001_1111
         month = (day_month >> 8) & 0b0000_1111
 
-        minute_hour = self.client.convert_from_registers(registers[2:3], ModbusClientMixin.DATATYPE.UINT16)
+        minute_hour = self.client.convert_from_registers(
+            registers[2:3], ModbusClientMixin.DATATYPE.UINT16
+        )
         minute = minute_hour & 0b0011_1111
         hour = (minute_hour >> 8) & 0b0001_1111
 
-        second_millisecond = self.client.convert_from_registers(registers[3:4], ModbusClientMixin.DATATYPE.UINT16)
+        second_millisecond = self.client.convert_from_registers(
+            registers[3:4], ModbusClientMixin.DATATYPE.UINT16
+        )
         second = math.floor(second_millisecond / 1000)
         millisecond = second_millisecond - second * 1000
 
-        if year_raw == 0xFFFF and day_month == 0xFFFF and minute_hour == 0xFFFF and second_millisecond == 0xFFFF:
+        if (
+            year_raw == 0xFFFF
+            and day_month == 0xFFFF
+            and minute_hour == 0xFFFF
+            and second_millisecond == 0xFFFF
+        ):
             return None
 
         return datetime(year, month, day, hour, minute, second, millisecond)

@@ -38,16 +38,19 @@ class DiscoveredDevice:
         self.presentation_url = find_tag(DPWS_PRESENTATION_URL, content)
         self.friendly_name = find_tag(DPWS_FRIENDLY_NAME, content)
         self.serial_number = find_tag(DPWS_SERIAL_NUMBER, content)
-
         self.host = urlparse(self.presentation_url).hostname
-
         self.type_of_gateway = type_of_gateway
+        self.port = None
 
+    @classmethod
+    async def create(cls, content: str, type_of_gateway: TypeOfGateway):
+        instance = cls(content, type_of_gateway)
         try:
-            SchneiderModbus(self.host, self.type_of_gateway, DEFAULT_MODBUS_PORT, timeout=1)
-            self.port = DEFAULT_MODBUS_PORT
+            await SchneiderModbus.create(instance.host, instance.type_of_gateway, DEFAULT_MODBUS_PORT, timeout=1)
+            instance.port = DEFAULT_MODBUS_PORT
         except ConnectionException:
-            self.port = None
+            instance.port = None
+        return instance
 
 
 def find_tag(tag, source):
@@ -212,13 +215,13 @@ class PowerTagFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         type_of_gateway = [t for t in TypeOfGateway if t.value == self.type_of_gateway][0]
 
         logging.info("Setting up modbus client...")
-        self.client = SchneiderModbus(self.host, type_of_gateway, self.port)
+        self.client = await SchneiderModbus.create(self.host, type_of_gateway, self.port)
 
         logging.info("Checking status...")
         if (((type_of_gateway in [TypeOfGateway.POWERTAG_LINK, TypeOfGateway.SMARTLINK]) and self.client.status() != LinkStatus.OPERATING)
                 or (type_of_gateway is TypeOfGateway.PANEL_SERVER and self.client.health() != PanelHealth.NOMINAL)):
             if not self.skip_degradation_warning:
-                self.status = self.client.status() if type_of_gateway is TypeOfGateway.POWERTAG_LINK else self.client.health()
+                self.status = await self.client.status() if type_of_gateway is TypeOfGateway.POWERTAG_LINK else self.client.health()
                 return await self.async_step_degraded()
 
         logging.info("Retrieving serial number...")
@@ -227,11 +230,11 @@ class PowerTagFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
         logging.info("Retrieving model name...")
         if not self.model_name:
-            self.model_name = self.client.product_model()
+            self.model_name = await self.client.product_model()
 
         logging.info("Retrieving device name...")
         if not self.name:
-            self.name = self.client.name()
+            self.name = await self.client.name()
 
         logging.info("Got everything, continuing creation process...")
         if self.serial_number is not None:

@@ -43,7 +43,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         unique_id_version = UniqueIdVersion.V0
 
     try:
-        client = SchneiderModbus(host, type_of_gateway, port)
+        client = await SchneiderModbus.create(host, type_of_gateway, port)
     except ConnectionException as e:
         raise ConfigEntryNotReady from e
 

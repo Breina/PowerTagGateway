@@ -9,7 +9,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import CONF_CLIENT, DOMAIN, UniqueIdVersion
 from .device_features import FeatureClass
-from .entity_base import WirelessDeviceEntity, GatewayEntity, setup_entities, gateway_device_info
+from .entity_base import WirelessDeviceEntity, GatewayEntity, async_setup_entities, gateway_device_info
 from .schneider_modbus import SchneiderModbus, LinkStatus, PanelHealth, TypeOfGateway
 
 _LOGGER = logging.getLogger(__name__)
@@ -30,12 +30,12 @@ async def async_setup_entry(
     """Set up PowerTag Link Gateway from a config entry."""
 
     binary_sensors = list_binary_sensors()
-    entities = setup_entities(hass, config_entry, binary_sensors)
+    entities = await async_setup_entities(hass, config_entry, binary_sensors)
 
     data = hass.data[DOMAIN][config_entry.entry_id]
     presentation_url = data[CONF_INTERNAL_URL]
     client = data[CONF_CLIENT]
-    gateway_device = gateway_device_info(client, presentation_url)
+    gateway_device = await gateway_device_info(client, presentation_url)
 
     entities.extend([gateway_entity for gateway_entity
                      in [GatewayStatus(client, gateway_device), GatewayHealth(client, gateway_device)]
@@ -53,7 +53,7 @@ class PowerTagWirelessCommunicationValid(WirelessDeviceEntity, BinarySensorEntit
         super().__init__(client, modbus_index, tag_device, "wireless communication valid", unique_id_version)
 
     async def async_update(self):
-        self._attr_is_on = self._client.tag_wireless_communication_valid(self._modbus_index)
+        self._attr_is_on = await self._client.tag_wireless_communication_valid(self._modbus_index)
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -75,7 +75,7 @@ class PowerTagRadioCommunicationValid(WirelessDeviceEntity, BinarySensorEntity):
         super().__init__(client, modbus_index, tag_device, "radio communication valid", unique_id_version)
 
     async def async_update(self):
-        self._attr_is_on = self._client.tag_radio_communication_valid(self._modbus_index)
+        self._attr_is_on = await self._client.tag_radio_communication_valid(self._modbus_index)
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -96,7 +96,7 @@ class PowerTagAlarm(WirelessDeviceEntity, BinarySensorEntity):
         super().__init__(client, modbus_index, tag_device, "alarm info", unique_id_version)
 
     async def async_update(self):
-        alarm = self._client.tag_get_alarm(self._modbus_index)
+        alarm = await self._client.tag_get_alarm(self._modbus_index)
 
         if alarm.has_alarm != self._attr_is_on:
             self._attr_is_on = alarm.has_alarm
@@ -131,7 +131,7 @@ class AmbientTagAlarm(WirelessDeviceEntity, BinarySensorEntity):
         self.__product_range = self._client.tag_product_range(self._modbus_index)
 
     async def async_update(self):
-        alarm = self._client.tag_get_alarm(self._modbus_index)
+        alarm = await self._client.tag_get_alarm(self._modbus_index)
         self._attr_is_on = alarm.has_alarm
 
     @staticmethod
@@ -152,7 +152,7 @@ class GatewayStatus(GatewayEntity, BinarySensorEntity):
         self._attr_extra_state_attributes = {}
 
     async def async_update(self):
-        status = self._client.status()
+        status = await self._client.status()
         self._attr_is_on = status != LinkStatus.OPERATING
 
         self._attr_extra_state_attributes["status"] = {
@@ -185,7 +185,7 @@ class GatewayHealth(GatewayEntity, BinarySensorEntity):
         self._attr_extra_state_attributes = {}
 
     async def async_update(self):
-        status = self._client.health()
+        status = await self._client.health()
         self._attr_is_on = status != PanelHealth.NOMINAL
 
         self._attr_extra_state_attributes["status"] = {

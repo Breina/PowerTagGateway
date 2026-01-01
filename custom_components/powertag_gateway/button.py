@@ -36,8 +36,8 @@ async def async_setup_entry(
 
 
 class PowerTagResetPeakDemand(WirelessDeviceEntity, ButtonEntity):
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
-        super().__init__(client, modbus_index, tag_device, "reset peak demand", unique_id_version)
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion, serial_number: str):
+        super().__init__(client, modbus_index, tag_device, "reset peak demand", unique_id_version, serial_number)
 
     async def async_press(self) -> None:
         await self.async_reset()
@@ -55,8 +55,8 @@ class PowerTagResetPeakDemand(WirelessDeviceEntity, ButtonEntity):
 
 
 class PowerTagResetActiveEnergyDelivered(WirelessDeviceEntity, ButtonEntity):
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
-        super().__init__(client, modbus_index, tag_device, "reset active energy delivered", unique_id_version)
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion, serial_number: str):
+        super().__init__(client, modbus_index, tag_device, "reset active energy delivered", unique_id_version, serial_number)
 
     async def async_press(self) -> None:
         await self.async_reset()
@@ -76,8 +76,8 @@ class PowerTagResetActiveEnergyDelivered(WirelessDeviceEntity, ButtonEntity):
 
 
 class PowerTagResetActiveEnergyReceived(WirelessDeviceEntity, ButtonEntity):
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
-        super().__init__(client, modbus_index, tag_device, "reset active energy received", unique_id_version)
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion, serial_number: str):
+        super().__init__(client, modbus_index, tag_device, "reset active energy received", unique_id_version, serial_number)
 
     async def async_press(self) -> None:
         await self.async_reset()
@@ -97,8 +97,8 @@ class PowerTagResetActiveEnergyReceived(WirelessDeviceEntity, ButtonEntity):
 
 
 class PowerTagResetReactiveEnergyDelivered(WirelessDeviceEntity, ButtonEntity):
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
-        super().__init__(client, modbus_index, tag_device, "reset reactive energy delivered", unique_id_version)
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion, serial_number: str):
+        super().__init__(client, modbus_index, tag_device, "reset reactive energy delivered", unique_id_version, serial_number)
 
     async def async_press(self) -> None:
         await self.async_reset()
@@ -118,8 +118,8 @@ class PowerTagResetReactiveEnergyDelivered(WirelessDeviceEntity, ButtonEntity):
 
 
 class PowerTagResetReactiveEnergyReceived(WirelessDeviceEntity, ButtonEntity):
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
-        super().__init__(client, modbus_index, tag_device, "reset reactive energy received", unique_id_version)
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion, serial_number: str):
+        super().__init__(client, modbus_index, tag_device, "reset reactive energy received", unique_id_version, serial_number)
 
     async def async_press(self) -> None:
         await self.async_reset()
@@ -139,8 +139,8 @@ class PowerTagResetReactiveEnergyReceived(WirelessDeviceEntity, ButtonEntity):
 
 
 class PowerTagResetApparentEnergy(WirelessDeviceEntity, ButtonEntity):
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
-        super().__init__(client, modbus_index, tag_device, "reset apparent energy", unique_id_version)
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion, serial_number: str):
+        super().__init__(client, modbus_index, tag_device, "reset apparent energy", unique_id_version, serial_number)
 
     async def async_press(self) -> None:
         await self.async_reset()

@@ -4,7 +4,7 @@ import logging
 import math
 from datetime import datetime
 
-from pymodbus.client import ModbusTcpClient  # type: ignore
+from pymodbus.client import ModbusTcpClient, AsyncModbusTcpClient  # type: ignore
 from pymodbus.constants import DeviceInformation  # type: ignore
 from pymodbus.pdu import ExceptionResponse  # type: ignore
 from pymodbus.client.mixin import ModbusClientMixin  # type: ignore
@@ -192,8 +192,7 @@ class TypeOfGateway(enum.Enum):
 class SchneiderModbus:
     def __init__(self, host, type_of_gateway: TypeOfGateway, port=502, timeout=5):
         _LOGGER.info(f"Connecting Modbus TCP to {host}:{port}")
-        self.client = ModbusTcpClient(host=host, port=port, timeout=timeout)
-        self.client.connect()
+        self.client = AsyncModbusTcpClient(host=host, port=port, timeout=timeout)
         self.type_of_gateway = type_of_gateway
         self.synthetic_slave_id = None
 
@@ -231,7 +230,7 @@ class SchneiderModbus:
         else:
             return await self.__read_string(0x0050, 6, GATEWAY_SLAVE_ID)
 
-    def serial_number(self) -> str | None:
+    async def serial_number(self) -> str | None:
         """[S/N]: PP YY WW [D [nnnn]]
         • PP: Plant
         • YY: Year in decimal notation [05...99]
@@ -239,7 +238,7 @@ class SchneiderModbus:
         • D: Day of the week in decimal notation [1...7]
         • nnnn: Sequence of numbers [0001...10.00-0–1]
         """
-        return self.__sync_read_string(0x0064, 6, GATEWAY_SLAVE_ID)
+        return await self.__read_string(0x0064, 6, GATEWAY_SLAVE_ID)
 
     async def firmware_version(self) -> str | None:
         """valid for firmware version 001.008.007 and later."""
@@ -716,9 +715,9 @@ class SchneiderModbus:
         """Hardware revision"""
         return await self.__read_string(0x796A, 6, tag_index)
 
-    def tag_serial_number(self, tag_index: int) -> str | None:
+    async def tag_serial_number(self, tag_index: int) -> str | None:
         """Serial number"""
-        return self.__sync_read_string(0x7970, 10, tag_index)
+        return await self.__read_string(0x7970, 10, tag_index)
 
     async def tag_product_range(self, tag_index: int) -> str | None:
         """Product range"""
@@ -915,35 +914,50 @@ class SchneiderModbus:
     def __write(self, address: int, registers: list[int], slave_id: int):
         self.client.write_registers(address, registers, device_id=slave_id)
 
-    def __read(self, address: int, count: int, slave_id: int):
-        response = self.client.read_holding_registers(
-            address=address, count=count, device_id=slave_id
-        )
-        if response.isError():
-            raise ConnectionError(str(response))
-        return response.registers
-
-    async def __async_read(self, address: int, count: int, slave_id: int) -> list[int]:
-        loop = asyncio.get_event_loop()
+    async def __async_read(
+        self, address: int, count: int, slave_id: int
+    ) -> list[int] | None:
         try:
-            return await asyncio.wait_for(
-                loop.run_in_executor(None, self.__read, address, count, slave_id),
+            if not self.client.connected:
+                await self.client.connect()
+
+            result = await asyncio.wait_for(
+                self.client.read_holding_registers(
+                    address=address, count=count, device_id=slave_id
+                ),
                 timeout=5.0,
             )
+            if result.isError():
+                _LOGGER.debug(
+                    f"Modbus error reading {address} from slave ID {slave_id}"
+                )
+                return None
+            return result.registers
+
         except asyncio.TimeoutError:
-            _LOGGER.debug(f"Timeout when fetching address {address} from slave ID {slave_id}")
+            _LOGGER.debug(
+                f"Timeout when fetching address {address} from slave ID {slave_id}"
+            )
+            return None
 
     async def __async_write(
         self, address: int, registers: list[int], slave_id: int
     ) -> None:
-        loop = asyncio.get_event_loop()
         try:
-            await asyncio.wait_for(
-                loop.run_in_executor(None, self.__write, address, registers, slave_id),
+            if not self.client.connected:
+                await self.client.connect()
+
+            result = await asyncio.wait_for(
+                self.client.write_registers(address, registers, device_id=slave_id),
                 timeout=5.0,
             )
+            if result.isError():
+                _LOGGER.debug(f"Modbus error writing {address} to slave ID {slave_id}")
+                return None
         except asyncio.TimeoutError:
-            _LOGGER.debug(f"Timeout when writing to address {address} from slave ID {slave_id}")
+            _LOGGER.debug(
+                f"Timeout when writing to address {address} to slave ID {slave_id}"
+            )
 
     async def __identify(self, _: int):
         # data = self.client.read_device_information(read_code=DeviceInformation.REGULAR, device_id=0xFF)
@@ -959,16 +973,7 @@ class SchneiderModbus:
 
     async def __read_string(self, address: int, count: int, slave_id: int) -> str | None:
         registers = await self.__async_read(address, count, slave_id)
-        return self.client.convert_from_registers(
-            registers, ModbusClientMixin.DATATYPE.STRING
-        )
-
-    def __sync_read_string(self, address: int, count: int, slave_id: int) -> str | None:
-        registers = self.__read(address, count, slave_id)
-        return self.client.convert_from_registers(
-            registers, ModbusClientMixin.DATATYPE.STRING
-        )
-
+        return self.client.convert_from_registers(registers, ModbusClientMixin.DATATYPE.STRING)
 
     async def __write_string(self, address: int, slave_id: int, string: str):
         registers = self.client.convert_to_registers(
@@ -1001,14 +1006,14 @@ class SchneiderModbus:
         await self.__async_write(address, registers, slave_id)
 
     async def __read_int_32(self, address: int, slave_id: int) -> int | None:
-        registers = self.__read(address, 2, slave_id)
+        registers = await self.__async_read(address, 2, slave_id)
         result = self.client.convert_from_registers(
             registers, ModbusClientMixin.DATATYPE.UINT32
         )
         return result if result != 0x8000_0000 else None
 
     async def __read_int_64(self, address: int, slave_id: int) -> int | None:
-        registers = self.__read(address, 4, slave_id)
+        registers = await self.__async_read(address, 4, slave_id)
         result = self.client.convert_from_registers(
             registers, ModbusClientMixin.DATATYPE.UINT64
         )

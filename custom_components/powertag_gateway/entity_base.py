@@ -31,7 +31,7 @@ _LOGGER = logging.getLogger(__name__)
 async def gateway_device_info(
     client: SchneiderModbus, presentation_url: str
 ) -> DeviceInfo:
-    serial = client.serial_number()
+    serial = await client.serial_number()
     name = await client.name()
     hw_version = await client.hardware_version()
     firmware_version = await client.firmware_version()
@@ -57,7 +57,7 @@ async def tag_device_info(
     gateway_identification: tuple[str, str],
 ) -> DeviceInfo:
     is_unreachable = await client.tag_radio_lqi_gateway(modbus_index) is None
-    serial_number = client.tag_serial_number(modbus_index)
+    serial_number = await client.tag_serial_number(modbus_index)
 
     kwargs = {
         "configuration_url": presentation_url,
@@ -134,14 +134,13 @@ def phase_sequence_to_line_voltages(
 
 class GatewayEntity(Entity):
     def __init__(
-        self, client: SchneiderModbus, tag_device: DeviceInfo, sensor_name: str
+        self, client: SchneiderModbus, tag_device: DeviceInfo, sensor_name: str, serial_number: str
     ):
         self._client = client
         self._attr_device_info = tag_device
         self._attr_name = f"{tag_device['name']} {sensor_name}"
 
-        serial = self._client.serial_number()
-        self._attr_unique_id = f"{TAG_DOMAIN}{serial}{sensor_name}"
+        self._attr_unique_id = f"{TAG_DOMAIN}{serial_number}{sensor_name}"
 
     @staticmethod
     def supports_gateway(type_of_gateway: TypeOfGateway) -> bool:
@@ -156,6 +155,7 @@ class WirelessDeviceEntity(Entity):
         tag_device: DeviceInfo,
         entity_name: str,
         unique_id_version: UniqueIdVersion,
+        serial_number: str
     ):
         self._client = client
         self._modbus_index = modbus_index
@@ -163,12 +163,10 @@ class WirelessDeviceEntity(Entity):
         self._attr_device_info = tag_device
         self._attr_name = f"{tag_device['name']} {entity_name}"
 
-        serial = self._client.tag_serial_number(self._modbus_index)
-
         if unique_id_version == UniqueIdVersion.V2:
-            self._attr_unique_id = f"{TAG_DOMAIN}{serial}{entity_name}{self._modbus_index}"
+            self._attr_unique_id = f"{TAG_DOMAIN}{serial_number}{entity_name}{self._modbus_index}"
         else:
-            self._attr_unique_id = f"{TAG_DOMAIN}{serial}{entity_name}"
+            self._attr_unique_id = f"{TAG_DOMAIN}{serial_number}{entity_name}"
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -224,6 +222,9 @@ def collect_entities(
             args.append(None)
         elif typey == UniqueIdVersion:
             args.append(device_unique_id_version)
+        elif typey == str:
+            assert param[0] == "serial_number"
+            args.append(tag_device["serial_number"])
         else:
             raise AssertionError("Dev fucked up, please create a GitHub issue. :(")
     if enumerate_param:

@@ -130,7 +130,7 @@ class PowerTagFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 name = f"{device.friendly_name}: {device.model_name} ({device.host})"
                 if name == user_input[CONF_DEVICE]:
                     self.name = device.friendly_name
-                    self.serial_number = device.serial_number
+                    self.serial_number = await device.serial_number
                     self.host = device.host
                     self.port = device.port
                     self.type_of_gateway = device.type_of_gateway.value
@@ -226,7 +226,7 @@ class PowerTagFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
         logging.info("Retrieving serial number...")
         if not self.serial_number:
-            self.serial_number = self.client.serial_number()
+            self.serial_number = await self.client.serial_number()
 
         logging.info("Retrieving model name...")
         if not self.model_name:

@@ -36,9 +36,10 @@ async def async_setup_entry(
     presentation_url = data[CONF_INTERNAL_URL]
     client = data[CONF_CLIENT]
     gateway_device = await gateway_device_info(client, presentation_url)
+    gateway_serial = await client.serial_number()
 
     entities.extend([gateway_entity for gateway_entity
-                     in [GatewayStatus(client, gateway_device), GatewayHealth(client, gateway_device)]
+                     in [GatewayStatus(client, gateway_device, gateway_serial), GatewayHealth(client, gateway_device, gateway_serial)]
                      if gateway_entity.supports_gateway(client.type_of_gateway)
                      ])
 
@@ -49,8 +50,8 @@ class PowerTagWirelessCommunicationValid(WirelessDeviceEntity, BinarySensorEntit
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
-        super().__init__(client, modbus_index, tag_device, "wireless communication valid", unique_id_version)
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion, serial_number: str):
+        super().__init__(client, modbus_index, tag_device, "wireless communication valid", unique_id_version, serial_number)
 
     async def async_update(self):
         self._attr_is_on = await self._client.tag_wireless_communication_valid(self._modbus_index)
@@ -71,8 +72,8 @@ class PowerTagRadioCommunicationValid(WirelessDeviceEntity, BinarySensorEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
-        super().__init__(client, modbus_index, tag_device, "radio communication valid", unique_id_version)
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion, serial_number: str):
+        super().__init__(client, modbus_index, tag_device, "radio communication valid", unique_id_version, serial_number)
 
     async def async_update(self):
         self._attr_is_on = await self._client.tag_radio_communication_valid(self._modbus_index)
@@ -92,8 +93,8 @@ class PowerTagRadioCommunicationValid(WirelessDeviceEntity, BinarySensorEntity):
 class PowerTagAlarm(WirelessDeviceEntity, BinarySensorEntity):
     _attr_device_class = BinarySensorDeviceClass.PROBLEM
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
-        super().__init__(client, modbus_index, tag_device, "alarm info", unique_id_version)
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion, serial_number: str):
+        super().__init__(client, modbus_index, tag_device, "alarm info", unique_id_version, serial_number)
 
     async def async_update(self):
         alarm = await self._client.tag_get_alarm(self._modbus_index)
@@ -126,8 +127,8 @@ class PowerTagAlarm(WirelessDeviceEntity, BinarySensorEntity):
 class AmbientTagAlarm(WirelessDeviceEntity, BinarySensorEntity):
     _attr_device_class = BinarySensorDeviceClass.PROBLEM
 
-    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion):
-        super().__init__(client, modbus_index, tag_device, "battery", unique_id_version)
+    def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion, serial_number: str):
+        super().__init__(client, modbus_index, tag_device, "battery", unique_id_version, serial_number)
         self.__product_range = self._client.tag_product_range(self._modbus_index)
 
     async def async_update(self):
@@ -147,8 +148,8 @@ class GatewayStatus(GatewayEntity, BinarySensorEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_device_class = BinarySensorDeviceClass.PROBLEM
 
-    def __init__(self, client: SchneiderModbus, tag_device: DeviceInfo):
-        super().__init__(client, tag_device, "status")
+    def __init__(self, client: SchneiderModbus, tag_device: DeviceInfo, serial_number: str):
+        super().__init__(client, tag_device, "status", serial_number)
         self._attr_extra_state_attributes = {}
 
     async def async_update(self):
@@ -180,8 +181,8 @@ class GatewayHealth(GatewayEntity, BinarySensorEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_device_class = BinarySensorDeviceClass.PROBLEM
 
-    def __init__(self, client: SchneiderModbus, tag_device: DeviceInfo):
-        super().__init__(client, tag_device, "health")
+    def __init__(self, client: SchneiderModbus, tag_device: DeviceInfo, serial_number: str):
+        super().__init__(client, tag_device, "health", serial_number)
         self._attr_extra_state_attributes = {}
 
     async def async_update(self):

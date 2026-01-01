@@ -133,7 +133,6 @@ class AmbientTagAlarm(WirelessDeviceEntity, BinarySensorEntity):
 
     def __init__(self, client: SchneiderModbus, modbus_index: int, tag_device: DeviceInfo, unique_id_version: UniqueIdVersion, serial_number: str):
         super().__init__(client, modbus_index, tag_device, "battery", unique_id_version, serial_number)
-        self.__product_range = self._client.tag_product_range(self._modbus_index)
 
     async def async_update(self):
         alarm = await self._client.tag_get_alarm(self._modbus_index)

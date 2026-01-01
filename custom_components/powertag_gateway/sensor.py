@@ -113,13 +113,14 @@ class GatewayTime(GatewayEntity, SensorEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_device_class = SensorDeviceClass.TIMESTAMP
 
-    def __init__(self, client: SchneiderModbus, tag_device: DeviceInfo, serial_number: str):
+    def __init__(
+        self, client: SchneiderModbus, tag_device: DeviceInfo, serial_number: str
+    ):
         super().__init__(client, tag_device, "datetime", serial_number)
 
     async def async_update(self):
         raw_date = await self._client.date_time()
-
-        if raw_date:
+        if self._handle_availability(raw_date):
             self._attr_native_value = dt_util.as_utc(raw_date)
 
     @staticmethod
@@ -142,18 +143,23 @@ class PowerTagTotalActiveEnergy(WirelessDeviceEntity, SensorEntity):
         modbus_index: int,
         tag_device: DeviceInfo,
         unique_id_version: UniqueIdVersion,
-        serial_number: str
+        serial_number: str,
     ):
         super().__init__(
-            client, modbus_index, tag_device, "total active energy", unique_id_version, serial_number
+            client,
+            modbus_index,
+            tag_device,
+            "total active energy",
+            unique_id_version,
+            serial_number,
         )
 
     async def async_update(self):
-        self._attr_native_value = (
-            await self._client.tag_energy_active_delivered_plus_received_total(
-                self._modbus_index
-            )
+        value = await self._client.tag_energy_active_delivered_plus_received_total(
+            self._modbus_index
         )
+        if self._handle_availability(value):
+            self._attr_native_value = value
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -196,13 +202,18 @@ class PowerTagReactivePower(WirelessDeviceEntity, SensorEntity):
         serial_number: str,
     ):
         super().__init__(
-            client, modbus_index, tag_device, "reactive power", unique_id_version, serial_number
+            client,
+            modbus_index,
+            tag_device,
+            "reactive power",
+            unique_id_version,
+            serial_number,
         )
 
     async def async_update(self):
-        self._attr_native_value = await self._client.tag_power_reactive_total(
-            self._modbus_index
-        )
+        value = await self._client.tag_power_reactive_total(self._modbus_index)
+        if self._handle_availability(value):
+            self._attr_native_value = value
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -237,7 +248,7 @@ class PowerTagReactivePowerPerPhase(WirelessDeviceEntity, SensorEntity):
         tag_device: DeviceInfo,
         phase: Phase,
         unique_id_version: UniqueIdVersion,
-        serial_number: str
+        serial_number: str,
     ):
         super().__init__(
             client,
@@ -245,14 +256,14 @@ class PowerTagReactivePowerPerPhase(WirelessDeviceEntity, SensorEntity):
             tag_device,
             f"reactive power phase {phase}",
             unique_id_version,
-            serial_number
+            serial_number,
         )
         self.__phase = phase
 
     async def async_update(self):
-        self._attr_native_value = await self._client.tag_power_reactive(
-            self._modbus_index, self.__phase
-        )
+        value = await self._client.tag_power_reactive(self._modbus_index, self.__phase)
+        if self._handle_availability(value):
+            self._attr_native_value = value
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -278,16 +289,21 @@ class PowerTagApparentPower(WirelessDeviceEntity, SensorEntity):
         modbus_index: int,
         tag_device: DeviceInfo,
         unique_id_version: UniqueIdVersion,
-        serial_number: str
+        serial_number: str,
     ):
         super().__init__(
-            client, modbus_index, tag_device, "apparent power", unique_id_version, serial_number
+            client,
+            modbus_index,
+            tag_device,
+            "apparent power",
+            unique_id_version,
+            serial_number,
         )
 
     async def async_update(self):
-        self._attr_native_value = await self._client.tag_power_apparent_total(
-            self._modbus_index
-        )
+        value = await self._client.tag_power_apparent_total(self._modbus_index)
+        if self._handle_availability(value):
+            self._attr_native_value = value
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -328,7 +344,7 @@ class PowerTagApparentPowerPerPhase(WirelessDeviceEntity, SensorEntity):
         tag_device: DeviceInfo,
         phase: Phase,
         unique_id_version: UniqueIdVersion,
-        serial_number: str
+        serial_number: str,
     ):
         super().__init__(
             client,
@@ -336,14 +352,14 @@ class PowerTagApparentPowerPerPhase(WirelessDeviceEntity, SensorEntity):
             tag_device,
             f"apparent power phase {phase}",
             unique_id_version,
-            serial_number
+            serial_number,
         )
         self.__phase = phase
 
     async def async_update(self):
-        self._attr_native_value = await self._client.tag_power_apparent(
-            self._modbus_index, self.__phase
-        )
+        value = await self._client.tag_power_apparent(self._modbus_index, self.__phase)
+        if self._handle_availability(value):
+            self._attr_native_value = value
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -370,10 +386,15 @@ class PowerTagPowerFactor(WirelessDeviceEntity, SensorEntity):
         tag_device: DeviceInfo,
         feature_class: FeatureClass,
         unique_id_version: UniqueIdVersion,
-        serial_number: str
+        serial_number: str,
     ):
         super().__init__(
-            client, modbus_index, tag_device, "power factor", unique_id_version, serial_number
+            client,
+            modbus_index,
+            tag_device,
+            "power factor",
+            unique_id_version,
+            serial_number,
         )
         self._feature_class = feature_class
         self._attr_extra_state_attributes = {}
@@ -392,7 +413,8 @@ class PowerTagPowerFactor(WirelessDeviceEntity, SensorEntity):
 
     async def async_update(self):
         power_factor = await self._client.tag_power_factor_total(self._modbus_index)
-        self._attr_native_value = power_factor * 100 if power_factor else None
+        if self._handle_availability(power_factor):
+            self._attr_native_value = power_factor * 100
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -433,7 +455,7 @@ class PowerTagPowerFactorPerPhase(WirelessDeviceEntity, SensorEntity):
         tag_device: DeviceInfo,
         phase: Phase,
         unique_id_version: UniqueIdVersion,
-        serial_number: str
+        serial_number: str,
     ):
         super().__init__(
             client,
@@ -441,7 +463,7 @@ class PowerTagPowerFactorPerPhase(WirelessDeviceEntity, SensorEntity):
             tag_device,
             f"power factor phase {phase}",
             unique_id_version,
-            serial_number
+            serial_number,
         )
         self.__phase = phase
         self._attr_extra_state_attributes = {}
@@ -461,7 +483,8 @@ class PowerTagPowerFactorPerPhase(WirelessDeviceEntity, SensorEntity):
         power_factor = await self._client.tag_power_factor(
             self._modbus_index, self.__phase
         )
-        self._attr_native_value = power_factor * 100 if power_factor else None
+        if self._handle_availability(power_factor):
+            self._attr_native_value = power_factor * 100
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -487,7 +510,7 @@ class PowerTagPartialActiveEnergyDelivered(WirelessDeviceEntity, SensorEntity):
         modbus_index: int,
         tag_device: DeviceInfo,
         unique_id_version: UniqueIdVersion,
-        serial_number: str
+        serial_number: str,
     ):
         super().__init__(
             client,
@@ -495,13 +518,13 @@ class PowerTagPartialActiveEnergyDelivered(WirelessDeviceEntity, SensorEntity):
             tag_device,
             "partial active energy delivered",
             unique_id_version,
-            serial_number
+            serial_number,
         )
 
     async def async_update(self):
-        self._attr_native_value = (
-            await self._client.tag_energy_active_delivered_partial(self._modbus_index)
-        )
+        value = await self._client.tag_energy_active_delivered_partial(self._modbus_index)
+        if self._handle_availability(value):
+            self._attr_native_value = value
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -539,7 +562,7 @@ class PowerTagTotalActiveEnergyDelivered(WirelessDeviceEntity, SensorEntity):
         modbus_index: int,
         tag_device: DeviceInfo,
         unique_id_version: UniqueIdVersion,
-        serial_number: str
+        serial_number: str,
     ):
         super().__init__(
             client,
@@ -547,13 +570,13 @@ class PowerTagTotalActiveEnergyDelivered(WirelessDeviceEntity, SensorEntity):
             tag_device,
             "total active energy delivered",
             unique_id_version,
-            serial_number
+            serial_number,
         )
 
     async def async_update(self):
-        self._attr_native_value = await self._client.tag_energy_active_delivered_total(
-            self._modbus_index
-        )
+        value = await self._client.tag_energy_active_delivered_total(self._modbus_index)
+        if self._handle_availability(value):
+            self._attr_native_value = value
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -592,7 +615,7 @@ class PowerTagPartialActiveEnergyDeliveredPerPhase(WirelessDeviceEntity, SensorE
         tag_device: DeviceInfo,
         phase: Phase,
         unique_id_version: UniqueIdVersion,
-        serial_number: str
+        serial_number: str,
     ):
         super().__init__(
             client,
@@ -600,16 +623,14 @@ class PowerTagPartialActiveEnergyDeliveredPerPhase(WirelessDeviceEntity, SensorE
             tag_device,
             f"partial active energy delivered phase {phase}",
             unique_id_version,
-            serial_number
+            serial_number,
         )
         self.__phase = phase
 
     async def async_update(self):
-        self._attr_native_value = (
-            await self._client.tag_energy_active_delivered_partial_phase(
-                self._modbus_index, self.__phase
-            )
-        )
+        value = await self._client.tag_energy_active_delivered_partial_phase(self._modbus_index, self.__phase)
+        if self._handle_availability(value):
+            self._attr_native_value = value
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -647,7 +668,7 @@ class PowerTagTotalActiveEnergyDeliveredPerPhase(WirelessDeviceEntity, SensorEnt
         tag_device: DeviceInfo,
         phase: Phase,
         unique_id_version: UniqueIdVersion,
-        serial_number: str
+        serial_number: str,
     ):
         super().__init__(
             client,
@@ -655,16 +676,14 @@ class PowerTagTotalActiveEnergyDeliveredPerPhase(WirelessDeviceEntity, SensorEnt
             tag_device,
             f"total active energy delivered phase {phase}",
             unique_id_version,
-            serial_number
+            serial_number,
         )
         self.__phase = phase
 
     async def async_update(self):
-        self._attr_native_value = (
-            await self._client.tag_energy_active_delivered_total_phase(
-                self._modbus_index, self.__phase
-            )
-        )
+        value = await self._client.tag_energy_active_delivered_total_phase(self._modbus_index, self.__phase)
+        if self._handle_availability(value):
+            self._attr_native_value = value
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -701,7 +720,7 @@ class PowerTagPartialActiveEnergyReceived(WirelessDeviceEntity, SensorEntity):
         modbus_index: int,
         tag_device: DeviceInfo,
         unique_id_version: UniqueIdVersion,
-        serial_number: str
+        serial_number: str,
     ):
         super().__init__(
             client,
@@ -709,13 +728,13 @@ class PowerTagPartialActiveEnergyReceived(WirelessDeviceEntity, SensorEntity):
             tag_device,
             "partial active energy received",
             unique_id_version,
-            serial_number
+            serial_number,
         )
 
     async def async_update(self):
-        self._attr_native_value = await self._client.tag_energy_active_received_partial(
-            self._modbus_index
-        )
+        value = await self._client.tag_energy_active_received_partial(self._modbus_index)
+        if self._handle_availability(value):
+            self._attr_native_value = value
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -753,7 +772,7 @@ class PowerTagTotalActiveEnergyReceived(WirelessDeviceEntity, SensorEntity):
         modbus_index: int,
         tag_device: DeviceInfo,
         unique_id_version: UniqueIdVersion,
-        serial_number: str
+        serial_number: str,
     ):
         super().__init__(
             client,
@@ -761,13 +780,13 @@ class PowerTagTotalActiveEnergyReceived(WirelessDeviceEntity, SensorEntity):
             tag_device,
             "total active energy received",
             unique_id_version,
-            serial_number
+            serial_number,
         )
 
     async def async_update(self):
-        self._attr_native_value = await self._client.tag_energy_active_received_total(
-            self._modbus_index
-        )
+        value = await self._client.tag_energy_active_received_total(self._modbus_index)
+        if self._handle_availability(value):
+            self._attr_native_value = value
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -806,7 +825,7 @@ class PowerTagPartialActiveEnergyReceivedPerPhase(WirelessDeviceEntity, SensorEn
         tag_device: DeviceInfo,
         phase: Phase,
         unique_id_version: UniqueIdVersion,
-        serial_number: str
+        serial_number: str,
     ):
         super().__init__(
             client,
@@ -814,16 +833,14 @@ class PowerTagPartialActiveEnergyReceivedPerPhase(WirelessDeviceEntity, SensorEn
             tag_device,
             f"partial active energy received phase {phase}",
             unique_id_version,
-            serial_number
+            serial_number,
         )
         self.__phase = phase
 
     async def async_update(self):
-        self._attr_native_value = (
-            await self._client.tag_energy_active_received_partial_phase(
-                self._modbus_index, self.__phase
-            )
-        )
+        value = await self._client.tag_energy_active_received_partial_phase(self._modbus_index, self.__phase)
+        if self._handle_availability(value):
+            self._attr_native_value = value
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -861,7 +878,7 @@ class PowerTagTotalActiveEnergyReceivedPerPhase(WirelessDeviceEntity, SensorEnti
         tag_device: DeviceInfo,
         phase: Phase,
         unique_id_version: UniqueIdVersion,
-        serial_number: str
+        serial_number: str,
     ):
         super().__init__(
             client,
@@ -869,16 +886,14 @@ class PowerTagTotalActiveEnergyReceivedPerPhase(WirelessDeviceEntity, SensorEnti
             tag_device,
             f"total active energy received phase {phase}",
             unique_id_version,
-            serial_number
+            serial_number,
         )
         self.__phase = phase
 
     async def async_update(self):
-        self._attr_native_value = (
-            await self._client.tag_energy_active_received_total_phase(
-                self._modbus_index, self.__phase
-            )
-        )
+        value = await self._client.tag_energy_active_received_total_phase(self._modbus_index, self.__phase)
+        if self._handle_availability(value):
+            self._attr_native_value = value
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -917,7 +932,7 @@ class PowerTagPartialActiveEnergyDeliveredAndReceived(
         modbus_index: int,
         tag_device: DeviceInfo,
         unique_id_version: UniqueIdVersion,
-        serial_number: str
+        serial_number: str,
     ):
         super().__init__(
             client,
@@ -925,18 +940,18 @@ class PowerTagPartialActiveEnergyDeliveredAndReceived(
             tag_device,
             "partial energy delivered and received",
             unique_id_version,
-            serial_number
+            serial_number,
         )
 
     async def async_update(self):
-        self._attr_native_value = await (
-            self._client.tag_energy_active_delivered_plus_received_partial(
-                self._modbus_index
-            )
-        )
-        self._attr_last_reset = await self._client.tag_load_operating_time_start(
-            self._modbus_index
-        )
+        value = await self._client.tag_energy_active_delivered_plus_received_partial(self._modbus_index)
+
+        if self._handle_availability(value):
+            self._attr_native_value = value
+
+        last_reset = await self._client.tag_load_operating_time_start(self._modbus_index)
+        if self._handle_availability(value):
+            self._attr_last_reset = last_reset
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -969,7 +984,7 @@ class PowerTagPartialReactiveEnergyDelivered(WirelessDeviceEntity, SensorEntity)
         modbus_index: int,
         tag_device: DeviceInfo,
         unique_id_version: UniqueIdVersion,
-        serial_number: str
+        serial_number: str,
     ):
         super().__init__(
             client,
@@ -977,13 +992,13 @@ class PowerTagPartialReactiveEnergyDelivered(WirelessDeviceEntity, SensorEntity)
             tag_device,
             "partial reactive energy delivered",
             unique_id_version,
-            serial_number
+            serial_number,
         )
 
     async def async_update(self):
-        self._attr_native_value = (
-            await self._client.tag_energy_reactive_delivered_partial(self._modbus_index)
-        )
+        value = await self._client.tag_energy_reactive_delivered_partial(self._modbus_index)
+        if self._handle_availability(value):
+            self._attr_native_value = value
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -1016,7 +1031,7 @@ class PowerTagTotalReactiveEnergyDelivered(WirelessDeviceEntity, SensorEntity):
         modbus_index: int,
         tag_device: DeviceInfo,
         unique_id_version: UniqueIdVersion,
-        serial_number: str
+        serial_number: str,
     ):
         super().__init__(
             client,
@@ -1028,9 +1043,9 @@ class PowerTagTotalReactiveEnergyDelivered(WirelessDeviceEntity, SensorEntity):
         )
 
     async def async_update(self):
-        self._attr_native_value = (
-            await self._client.tag_energy_reactive_delivered_total(self._modbus_index)
-        )
+        value = await self._client.tag_energy_reactive_delivered_total(self._modbus_index)
+        if self._handle_availability(value):
+            self._attr_native_value = value
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -1058,7 +1073,7 @@ class PowerTagPartialReactiveEnergyDeliveredPerPhase(
         tag_device: DeviceInfo,
         phase: Phase,
         unique_id_version: UniqueIdVersion,
-        serial_number: str
+        serial_number: str,
     ):
         super().__init__(
             client,
@@ -1066,16 +1081,14 @@ class PowerTagPartialReactiveEnergyDeliveredPerPhase(
             tag_device,
             f"partial reactive energy delivered phase {phase}",
             unique_id_version,
-            serial_number
+            serial_number,
         )
         self.__phase = phase
 
     async def async_update(self):
-        self._attr_native_value = await (
-            self._client.tag_energy_reactive_delivered_partial_phase(
-                self._modbus_index, self.__phase
-            )
-        )
+        value = await self._client.tag_energy_reactive_delivered_partial_phase(self._modbus_index, self.__phase)
+        if self._handle_availability(value):
+            self._attr_native_value = value
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -1109,7 +1122,7 @@ class PowerTagTotalReactiveEnergyDeliveredPerPhase(WirelessDeviceEntity, SensorE
         tag_device: DeviceInfo,
         phase: Phase,
         unique_id_version: UniqueIdVersion,
-        serial_number: str
+        serial_number: str,
     ):
         super().__init__(
             client,
@@ -1117,16 +1130,14 @@ class PowerTagTotalReactiveEnergyDeliveredPerPhase(WirelessDeviceEntity, SensorE
             tag_device,
             f"total reactive energy delivered phase {phase}",
             unique_id_version,
-            serial_number
+            serial_number,
         )
         self.__phase = phase
 
     async def async_update(self):
-        self._attr_native_value = await (
-            self._client.tag_energy_reactive_delivered_total_phase(
-                self._modbus_index, self.__phase
-            )
-        )
+        value = await self._client.tag_energy_reactive_delivered_total_phase(self._modbus_index, self.__phase)
+        if self._handle_availability(value):
+            self._attr_native_value = value
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -1159,7 +1170,7 @@ class PowerTagPartialReactiveEnergyReceived(WirelessDeviceEntity, SensorEntity):
         modbus_index: int,
         tag_device: DeviceInfo,
         unique_id_version: UniqueIdVersion,
-        serial_number: str
+        serial_number: str,
     ):
         super().__init__(
             client,
@@ -1171,9 +1182,9 @@ class PowerTagPartialReactiveEnergyReceived(WirelessDeviceEntity, SensorEntity):
         )
 
     async def async_update(self):
-        self._attr_native_value = (
-            await self._client.tag_energy_reactive_received_partial(self._modbus_index)
-        )
+        value = await self._client.tag_energy_reactive_received_partial(self._modbus_index)
+        if self._handle_availability(value):
+            self._attr_native_value = value
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -1206,7 +1217,7 @@ class PowerTagTotalReactiveEnergyReceived(WirelessDeviceEntity, SensorEntity):
         modbus_index: int,
         tag_device: DeviceInfo,
         unique_id_version: UniqueIdVersion,
-        serial_number: str
+        serial_number: str,
     ):
         super().__init__(
             client,
@@ -1218,9 +1229,9 @@ class PowerTagTotalReactiveEnergyReceived(WirelessDeviceEntity, SensorEntity):
         )
 
     async def async_update(self):
-        self._attr_native_value = await self._client.tag_energy_reactive_received_total(
-            self._modbus_index
-        )
+        value = await self._client.tag_energy_reactive_received_total(self._modbus_index)
+        if self._handle_availability(value):
+            self._attr_native_value = value
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -1254,7 +1265,7 @@ class PowerTagPartialReactiveEnergyReceivedPerPhase(WirelessDeviceEntity, Sensor
         tag_device: DeviceInfo,
         phase: Phase,
         unique_id_version: UniqueIdVersion,
-        serial_number: str
+        serial_number: str,
     ):
         super().__init__(
             client,
@@ -1262,16 +1273,14 @@ class PowerTagPartialReactiveEnergyReceivedPerPhase(WirelessDeviceEntity, Sensor
             tag_device,
             f"partial reactive energy received phase {phase}",
             unique_id_version,
-            serial_number
+            serial_number,
         )
         self.__phase = phase
 
     async def async_update(self):
-        self._attr_native_value = await (
-            self._client.tag_energy_reactive_received_partial_phase(
-                self._modbus_index, self.__phase
-            )
-        )
+        value = await self._client.tag_energy_reactive_received_partial_phase(self._modbus_index, self.__phase)
+        if self._handle_availability(value):
+            self._attr_native_value = value
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -1305,7 +1314,7 @@ class PowerTagTotalReactiveEnergyReceivedPerPhase(WirelessDeviceEntity, SensorEn
         tag_device: DeviceInfo,
         phase: Phase,
         unique_id_version: UniqueIdVersion,
-        serial_number: str
+        serial_number: str,
     ):
         super().__init__(
             client,
@@ -1318,11 +1327,9 @@ class PowerTagTotalReactiveEnergyReceivedPerPhase(WirelessDeviceEntity, SensorEn
         self.__phase = phase
 
     async def async_update(self):
-        self._attr_native_value = (
-            await self._client.tag_energy_reactive_received_total_phase(
-                self._modbus_index, self.__phase
-            )
-        )
+        value = await self._client.tag_energy_reactive_received_total_phase(self._modbus_index, self.__phase)
+        if self._handle_availability(value):
+            self._attr_native_value = value
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -1364,13 +1371,13 @@ class PowerTagPartialApparentEnergy(WirelessDeviceEntity, SensorEntity):
             tag_device,
             "partial apparent energy",
             unique_id_version,
-            serial_number
+            serial_number,
         )
 
     async def async_update(self):
-        self._attr_native_value = await self._client.tag_energy_apparent_partial(
-            self._modbus_index
-        )
+        value = await self._client.tag_energy_apparent_partial(self._modbus_index)
+        if self._handle_availability(value):
+            self._attr_native_value = value
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -1396,16 +1403,21 @@ class PowerTagTotalApparentEnergy(WirelessDeviceEntity, SensorEntity):
         modbus_index: int,
         tag_device: DeviceInfo,
         unique_id_version: UniqueIdVersion,
-        serial_number: str
+        serial_number: str,
     ):
         super().__init__(
-            client, modbus_index, tag_device, "total apparent energy", unique_id_version, serial_number
+            client,
+            modbus_index,
+            tag_device,
+            "total apparent energy",
+            unique_id_version,
+            serial_number,
         )
 
     async def async_update(self):
-        self._attr_native_value = await self._client.tag_energy_apparent_total(
-            self._modbus_index
-        )
+        value = await self._client.tag_energy_apparent_total(self._modbus_index)
+        if self._handle_availability(value):
+            self._attr_native_value = value
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -1440,14 +1452,14 @@ class PowerTagPartialApparentEnergyPerPhase(WirelessDeviceEntity, SensorEntity):
             tag_device,
             f"partial apparent energy phase {phase}",
             unique_id_version,
-            serial_number
+            serial_number,
         )
         self.__phase = phase
 
     async def async_update(self):
-        self._attr_native_value = await self._client.tag_energy_apparent_partial_phase(
-            self._modbus_index, self.__phase
-        )
+        value = await self._client.tag_energy_apparent_partial_phase(self._modbus_index, self.__phase)
+        if self._handle_availability(value):
+            self._attr_native_value = value
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -1473,7 +1485,7 @@ class PowerTagTotalApparentEnergyPerPhase(WirelessDeviceEntity, SensorEntity):
         tag_device: DeviceInfo,
         phase: Phase,
         unique_id_version: UniqueIdVersion,
-        serial_number: str
+        serial_number: str,
     ):
         super().__init__(
             client,
@@ -1481,14 +1493,14 @@ class PowerTagTotalApparentEnergyPerPhase(WirelessDeviceEntity, SensorEntity):
             tag_device,
             f"total apparent energy phase {phase}",
             unique_id_version,
-            serial_number
+            serial_number,
         )
         self.__phase = phase
 
     async def async_update(self):
-        self._attr_native_value = await self._client.tag_energy_apparent_total_phase(
-            self._modbus_index, self.__phase
-        )
+        value = await self._client.tag_energy_apparent_total_phase(self._modbus_index, self.__phase)
+        if self._handle_availability(value):
+            self._attr_native_value = value
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -1514,10 +1526,15 @@ class PowerTagCurrent(WirelessDeviceEntity, SensorEntity):
         tag_device: DeviceInfo,
         phase: Phase,
         unique_id_version: UniqueIdVersion,
-        serial_number: str
+        serial_number: str,
     ):
         super().__init__(
-            client, modbus_index, tag_device, f"current {phase.name}", unique_id_version, serial_number
+            client,
+            modbus_index,
+            tag_device,
+            f"current {phase.name}",
+            unique_id_version,
+            serial_number,
         )
         self.__phase = phase
         self._attr_extra_state_attributes = {}
@@ -1530,9 +1547,9 @@ class PowerTagCurrent(WirelessDeviceEntity, SensorEntity):
         }
 
     async def async_update(self):
-        self._attr_native_value = await self._client.tag_current(
-            self._modbus_index, self.__phase
-        )
+        value = await self._client.tag_current(self._modbus_index, self.__phase)
+        if self._handle_availability(value):
+            self._attr_native_value = value
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -1575,7 +1592,12 @@ class PowerTagCurrentNeutral(WirelessDeviceEntity, SensorEntity):
         serial_number: str,
     ):
         super().__init__(
-            client, modbus_index, tag_device, f"current neutral", unique_id_version, serial_number
+            client,
+            modbus_index,
+            tag_device,
+            f"current neutral",
+            unique_id_version,
+            serial_number,
         )
 
         self._attr_extra_state_attributes = {}
@@ -1588,9 +1610,9 @@ class PowerTagCurrentNeutral(WirelessDeviceEntity, SensorEntity):
         }
 
     async def async_update(self):
-        self._attr_native_value = await self._client.tag_current_neutral(
-            self._modbus_index
-        )
+        value = await self._client.tag_current_neutral(self._modbus_index)
+        if self._handle_availability(value):
+            self._attr_native_value = value
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -1617,10 +1639,15 @@ class PowerTagVoltage(WirelessDeviceEntity, SensorEntity):
         tag_device: DeviceInfo,
         line: LineVoltage,
         unique_id_version: UniqueIdVersion,
-        serial_number: str
+        serial_number: str,
     ):
         super().__init__(
-            client, modbus_index, tag_device, f"voltage {line.name}", unique_id_version, serial_number
+            client,
+            modbus_index,
+            tag_device,
+            f"voltage {line.name}",
+            unique_id_version,
+            serial_number,
         )
         self.__line = line
         self._attr_extra_state_attributes = {}
@@ -1634,9 +1661,9 @@ class PowerTagVoltage(WirelessDeviceEntity, SensorEntity):
             self._attr_extra_state_attributes = {"Rated voltage": rated_voltage}
 
     async def async_update(self):
-        self._attr_native_value = await self._client.tag_voltage(
-            self._modbus_index, self.__line
-        )
+        value = await self._client.tag_voltage(self._modbus_index, self.__line)
+        if self._handle_availability(value):
+            self._attr_native_value = value
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -1676,16 +1703,21 @@ class PowerTagFrequency(WirelessDeviceEntity, SensorEntity):
         modbus_index: int,
         tag_device: DeviceInfo,
         unique_id_version: UniqueIdVersion,
-        serial_number: str
+        serial_number: str,
     ):
         super().__init__(
-            client, modbus_index, tag_device, f"frequency", unique_id_version, serial_number
+            client,
+            modbus_index,
+            tag_device,
+            f"frequency",
+            unique_id_version,
+            serial_number,
         )
 
     async def async_update(self):
-        self._attr_native_value = await self._client.tag_ac_frequency(
-            self._modbus_index
-        )
+        value = await self._client.tag_ac_frequency(self._modbus_index)
+        if self._handle_availability(value):
+            self._attr_native_value = value
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -1718,16 +1750,21 @@ class PowerTagTemperature(WirelessDeviceEntity, SensorEntity):
         modbus_index: int,
         tag_device: DeviceInfo,
         unique_id_version: UniqueIdVersion,
-        serial_number: str
+        serial_number: str,
     ):
         super().__init__(
-            client, modbus_index, tag_device, f"temperature", unique_id_version, serial_number
+            client,
+            modbus_index,
+            tag_device,
+            f"temperature",
+            unique_id_version,
+            serial_number,
         )
 
     async def async_update(self):
-        self._attr_native_value = await self._client.tag_device_temperature(
-            self._modbus_index
-        )
+        value = await self._client.tag_device_temperature(self._modbus_index)
+        if self._handle_availability(value):
+            self._attr_native_value = value
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -1778,16 +1815,21 @@ class PowerTagActivePower(WirelessDeviceEntity, SensorEntity):
         modbus_index: int,
         tag_device: DeviceInfo,
         unique_id_version: UniqueIdVersion,
-        serial_number: str
+        serial_number: str,
     ):
         super().__init__(
-            client, modbus_index, tag_device, "active power", unique_id_version, serial_number
+            client,
+            modbus_index,
+            tag_device,
+            "active power",
+            unique_id_version,
+            serial_number,
         )
 
     async def async_update(self):
-        self._attr_native_value = await self._client.tag_power_active_total(
-            self._modbus_index
-        )
+        value = await self._client.tag_power_active_total(self._modbus_index)
+        if self._handle_availability(value):
+            self._attr_native_value = value
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -1828,7 +1870,7 @@ class PowerTagActivePowerPerPhase(WirelessDeviceEntity, SensorEntity):
         tag_device: DeviceInfo,
         phase: Phase,
         unique_id_version: UniqueIdVersion,
-        serial_number: str
+        serial_number: str,
     ):
         super().__init__(
             client,
@@ -1836,14 +1878,14 @@ class PowerTagActivePowerPerPhase(WirelessDeviceEntity, SensorEntity):
             tag_device,
             f"active power phase {phase}",
             unique_id_version,
-            serial_number
+            serial_number,
         )
         self.__phase = phase
 
     async def async_update(self):
-        self._attr_native_value = await self._client.tag_power_active(
-            self._modbus_index, self.__phase
-        )
+        value = await self._client.tag_power_active(self._modbus_index, self.__phase)
+        if self._handle_availability(value):
+            self._attr_native_value = value
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -1881,16 +1923,22 @@ class PowerTagDemandActivePower(WirelessDeviceEntity, SensorEntity):
         modbus_index: int,
         tag_device: DeviceInfo,
         unique_id_version: UniqueIdVersion,
-        serial_number: str
+        serial_number: str,
     ):
         super().__init__(
-            client, modbus_index, tag_device, "demand active power", unique_id_version, serial_number
+            client,
+            modbus_index,
+            tag_device,
+            "demand active power",
+            unique_id_version,
+            serial_number,
         )
 
     async def async_update(self):
-        self._attr_native_value = await self._client.tag_power_active_demand_total(
-            self._modbus_index
-        )
+        value = await self._client.tag_power_active_demand_total(self._modbus_index)
+        if self._handle_availability(value):
+            self._attr_native_value = value
+
         self._attr_extra_state_attributes = {
             "Maximum demand active power (W)": await self._client.tag_power_active_power_demand_total_maximum(
                 self._modbus_index
@@ -1925,16 +1973,21 @@ class EnvTagBatteryVoltage(WirelessDeviceEntity, SensorEntity):
         modbus_index: int,
         tag_device: DeviceInfo,
         unique_id_version: UniqueIdVersion,
-        serial_number: str
+        serial_number: str,
     ):
         super().__init__(
-            client, modbus_index, tag_device, "battery voltage", unique_id_version, serial_number
+            client,
+            modbus_index,
+            tag_device,
+            "battery voltage",
+            unique_id_version,
+            serial_number,
         )
 
     async def async_update(self):
-        self._attr_native_value = await self._client.env_battery_voltage(
-            self._modbus_index
-        )
+        value = await self._client.env_battery_voltage(self._modbus_index)
+        if self._handle_availability(value):
+            self._attr_native_value = value
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -1956,10 +2009,15 @@ class EnvTagTemperature(WirelessDeviceEntity, SensorEntity):
         modbus_index: int,
         tag_device: DeviceInfo,
         unique_id_version: UniqueIdVersion,
-        serial_number: str
+        serial_number: str,
     ):
         super().__init__(
-            client, modbus_index, tag_device, "temperature", unique_id_version, serial_number
+            client,
+            modbus_index,
+            tag_device,
+            "temperature",
+            unique_id_version,
+            serial_number,
         )
         self._attr_extra_state_attributes = {}
 
@@ -1975,7 +2033,9 @@ class EnvTagTemperature(WirelessDeviceEntity, SensorEntity):
         }
 
     async def async_update(self):
-        self._attr_native_value = await self._client.env_temperature(self._modbus_index)
+        value = await self._client.env_temperature(self._modbus_index)
+        if self._handle_availability(value):
+            self._attr_native_value = value
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -2001,10 +2061,15 @@ class EnvTagHumidity(WirelessDeviceEntity, SensorEntity):
         modbus_index: int,
         tag_device: DeviceInfo,
         unique_id_version: UniqueIdVersion,
-        serial_number: str
+        serial_number: str,
     ):
         super().__init__(
-            client, modbus_index, tag_device, "humidity", unique_id_version, serial_number
+            client,
+            modbus_index,
+            tag_device,
+            "humidity",
+            unique_id_version,
+            serial_number,
         )
         self._client = client
         self._modbus_index = modbus_index
@@ -2025,9 +2090,9 @@ class EnvTagHumidity(WirelessDeviceEntity, SensorEntity):
         self.async_write_ha_state()
 
     async def async_update(self):
-        self._attr_native_value = (
-            await self._client.env_humidity(self._modbus_index) * 100
-        )
+        value = await self._client.env_humidity(self._modbus_index)
+        if self._handle_availability(value):
+            self._attr_native_value = value * 100
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -2049,12 +2114,16 @@ class EnvTagCO2(WirelessDeviceEntity, SensorEntity):
         modbus_index: int,
         tag_device: DeviceInfo,
         unique_id_version: UniqueIdVersion,
-        serial_number: str
+        serial_number: str,
     ):
-        super().__init__(client, modbus_index, tag_device, "CO2", unique_id_version, serial_number)
+        super().__init__(
+            client, modbus_index, tag_device, "CO2", unique_id_version, serial_number
+        )
 
     async def async_update(self):
-        self._attr_native_value = await self._client.env_co2(self._modbus_index) * 1000
+        value = await self._client.env_co2(self._modbus_index)
+        if self._handle_availability(value):
+            self._attr_native_value = value * 1000
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -2077,16 +2146,22 @@ class DeviceRssiTag(WirelessDeviceEntity, SensorEntity):
         modbus_index: int,
         tag_device: DeviceInfo,
         unique_id_version: UniqueIdVersion,
-        serial_number: str
+        serial_number: str,
     ):
         super().__init__(
-            client, modbus_index, tag_device, "RSSI in tag", unique_id_version, serial_number
+            client,
+            modbus_index,
+            tag_device,
+            "RSSI in tag",
+            unique_id_version,
+            serial_number,
         )
 
     async def async_update(self):
-        self._attr_native_value = await self._client.tag_radio_rssi_inside_tag(
-            self._modbus_index
-        )
+        value = await self._client.tag_radio_rssi_inside_tag(self._modbus_index)
+        if self._handle_availability(value):
+            self._attr_native_value = value
+
         self._attr_extra_state_attributes = {
             "Minimum": await self._client.tag_radio_rssi_minimum(self._modbus_index)
         }
@@ -2132,16 +2207,22 @@ class DeviceRssiGateway(WirelessDeviceEntity, SensorEntity):
         modbus_index: int,
         tag_device: DeviceInfo,
         unique_id_version: UniqueIdVersion,
-        serial_number: str
+        serial_number: str,
     ):
         super().__init__(
-            client, modbus_index, tag_device, "RSSI in gateway", unique_id_version, serial_number
+            client,
+            modbus_index,
+            tag_device,
+            "RSSI in gateway",
+            unique_id_version,
+            serial_number,
         )
 
     async def async_update(self):
-        self._attr_native_value = await self._client.tag_radio_rssi_inside_gateway(
-            self._modbus_index
-        )
+        value = await self._client.tag_radio_rssi_inside_gateway(self._modbus_index)
+        if self._handle_availability(value):
+            self._attr_native_value = value
+
         self._attr_extra_state_attributes = {
             "Minimum": await self._client.tag_radio_rssi_minimum(self._modbus_index)
         }
@@ -2185,16 +2266,22 @@ class DeviceLqiTag(WirelessDeviceEntity, SensorEntity):
         modbus_index: int,
         tag_device: DeviceInfo,
         unique_id_version: UniqueIdVersion,
-        serial_number: str
+        serial_number: str,
     ):
         super().__init__(
-            client, modbus_index, tag_device, "LQI in tag", unique_id_version, serial_number
+            client,
+            modbus_index,
+            tag_device,
+            "LQI in tag",
+            unique_id_version,
+            serial_number,
         )
 
     async def async_update(self):
-        self._attr_native_value = await self._client.tag_radio_lqi_tag(
-            self._modbus_index
-        )
+        value = await self._client.tag_radio_lqi_tag(self._modbus_index)
+        if self._handle_availability(value):
+            self._attr_native_value = value
+
         self._attr_extra_state_attributes = {
             "Minimum": await self._client.tag_radio_lqi_minimum(self._modbus_index)
         }
@@ -2238,16 +2325,22 @@ class DeviceLqiGateway(WirelessDeviceEntity, SensorEntity):
         modbus_index: int,
         tag_device: DeviceInfo,
         unique_id_version: UniqueIdVersion,
-        serial_number: str
+        serial_number: str,
     ):
         super().__init__(
-            client, modbus_index, tag_device, "LQI in gateway", unique_id_version, serial_number
+            client,
+            modbus_index,
+            tag_device,
+            "LQI in gateway",
+            unique_id_version,
+            serial_number,
         )
 
     async def async_update(self):
-        self._attr_native_value = await self._client.tag_radio_lqi_gateway(
-            self._modbus_index
-        )
+        value = await self._client.tag_radio_lqi_gateway(self._modbus_index)
+        if self._handle_availability(value):
+            self._attr_native_value = value
+
         self._attr_extra_state_attributes = {
             "Minimum": await self._client.tag_radio_lqi_minimum(self._modbus_index)
         }
@@ -2291,7 +2384,7 @@ class DevicePerTag(WirelessDeviceEntity, SensorEntity):
         modbus_index: int,
         tag_device: DeviceInfo,
         unique_id_version: UniqueIdVersion,
-        serial_number: str
+        serial_number: str,
     ):
         super().__init__(
             client,
@@ -2299,13 +2392,14 @@ class DevicePerTag(WirelessDeviceEntity, SensorEntity):
             tag_device,
             "packet error rate in tag",
             unique_id_version,
-            serial_number
+            serial_number,
         )
 
     async def async_update(self):
-        self._attr_native_value = await self._client.tag_radio_per_tag(
-            self._modbus_index
-        )
+        value = await self._client.tag_radio_per_tag(self._modbus_index)
+        if self._handle_availability(value):
+            self._attr_native_value = value
+
         self._attr_extra_state_attributes = {
             "Maximum": await self._client.tag_radio_per_maximum(self._modbus_index)
         }
@@ -2347,7 +2441,9 @@ class DevicePerGateway(WirelessDeviceEntity, SensorEntity):
         super().__init__(client, modbus_index, tag_device, "packet error rate in gateway", unique_id_version, serial_number)
 
     async def async_update(self):
-        self._attr_native_value = await self._client.tag_radio_per_gateway(self._modbus_index)
+        value = await self._client.tag_radio_per_gateway(self._modbus_index)
+        if self._handle_availability(value):
+            self._attr_native_value = value
         self._attr_extra_state_attributes = {
             "Maximum": await self._client.tag_radio_per_maximum(self._modbus_index)
         }

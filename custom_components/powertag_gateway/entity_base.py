@@ -71,7 +71,9 @@ async def tag_device_info(
         "name": await client.tag_name(modbus_index),
     }
     if not is_unreachable:
-        kwargs["suggested_area"] = (await client.tag_usage(modbus_index)).name
+        usage = await client.tag_usage(modbus_index)
+        if usage is not None:
+            kwargs["suggested_area"] = usage.name
 
     if not is_unreachable and logging.DEBUG >= _LOGGER.level:
         position = await client.tag_position(modbus_index)
@@ -146,6 +148,10 @@ class GatewayEntity(Entity):
     def supports_gateway(type_of_gateway: TypeOfGateway) -> bool:
         raise NotImplementedError()
 
+    def _handle_availability(self, value: object):
+        self._attr_available = value is not None
+        return self._attr_available
+
 
 class WirelessDeviceEntity(Entity):
     def __init__(
@@ -179,6 +185,10 @@ class WirelessDeviceEntity(Entity):
     @staticmethod
     def supports_firmware_version(firmware_version: str) -> bool:
         return True
+
+    def _handle_availability(self, value: object):
+        self._attr_available = value is not None
+        return self._attr_available
 
 
 def collect_entities(

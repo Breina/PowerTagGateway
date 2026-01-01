@@ -8,6 +8,7 @@ from pymodbus.client import ModbusTcpClient, AsyncModbusTcpClient  # type: ignor
 from pymodbus.constants import DeviceInformation  # type: ignore
 from pymodbus.pdu import ExceptionResponse  # type: ignore
 from pymodbus.client.mixin import ModbusClientMixin  # type: ignore
+from pymodbus.exceptions import ModbusIOException  # type: ignore
 
 GATEWAY_SLAVE_ID = 255
 SYNTHESIS_TABLE_SLAVE_ID_START = 247
@@ -249,7 +250,7 @@ class SchneiderModbus:
 
     # Status
 
-    async def status(self) -> LinkStatus:
+    async def status(self) -> LinkStatus | None:
         """PowerTag Link gateway status and diagnostic register"""
         assert self.type_of_gateway in [
             TypeOfGateway.POWERTAG_LINK,
@@ -257,18 +258,18 @@ class SchneiderModbus:
         ]
         bitmap = self.__read_int_16(0x0070, GATEWAY_SLAVE_ID)
         try:
-            return LinkStatus(bitmap)
+            return LinkStatus(bitmap) if bitmap is not None else None
         except Exception as e:
             _LOGGER.error(
                 f"Could not map status, defaulting to GENERAL_FAILURE ({str(e)}"
             )
             return LinkStatus.GENERAL_FAILURE
 
-    async def health(self) -> PanelHealth:
+    async def health(self) -> PanelHealth | None:
         """PowerTag Link gateway status and diagnostic register"""
         assert self.type_of_gateway == TypeOfGateway.PANEL_SERVER
         code = await self.__read_int_16(0x009E, GATEWAY_SLAVE_ID)
-        return PanelHealth(code)
+        return PanelHealth(code) if code is not None else None
 
     # Date and Time
 
@@ -332,9 +333,10 @@ class SchneiderModbus:
 
     async def tag_power_factor_sign_convention(
         self, tag_index: int
-    ) -> PowerFactorSignConvention:
+    ) -> PowerFactorSignConvention | None:
         """Power factor sign convention"""
-        return PowerFactorSignConvention(await self.__read_int_16(0xC0D, tag_index))
+        power_factor_sign = await self.__read_int_16(0xC0D, tag_index)
+        return PowerFactorSignConvention(power_factor_sign) if power_factor_sign is not None else None
 
     # Frequency Metering Data
 
@@ -553,13 +555,18 @@ class SchneiderModbus:
     async def tag_is_alarm_valid(self, tag_index: int) -> AlarmDetails | bool | None:
         """Validity of the alarm bitmap"""
         if self.type_of_gateway is TypeOfGateway.PANEL_SERVER:
-            return AlarmDetails(await self.__read_int_32(0xCE1, tag_index) or 0)
+            alarm_valid = await self.__read_int_32(0xCE1, tag_index)
+            return AlarmDetails(alarm_valid) if alarm_valid is not None else None
         else:
-            return (await self.__read_int_32(0xCE1, tag_index) & 0b1) != 0
+            alarm_valid = await self.__read_int_32(0xCE1, tag_index)
+            if alarm_valid is None:
+                return None
+            return (alarm_valid & 0b1) != 0
 
-    async def tag_get_alarm(self, tag_index: int) -> AlarmDetails:
+    async def tag_get_alarm(self, tag_index: int) -> AlarmDetails | None:
         """Alarms"""
-        return AlarmDetails(await self.__read_int_32(0xCE3, tag_index) or 0)
+        alarm = await self.__read_int_32(0xCE3, tag_index)
+        return AlarmDetails(alarm) if alarm is not None else None
 
     async def tag_current_at_voltage_loss(
         self, tag_index: int, phase: Phase
@@ -593,21 +600,25 @@ class SchneiderModbus:
         """Circuit identifier of the wireless device. The user can enter maximum five characters."""
         return await self.__read_string(0x7922, 3, tag_index)
 
-    async def tag_usage(self, tag_index: int) -> DeviceUsage:
+    async def tag_usage(self, tag_index: int) -> DeviceUsage | None:
         """Indicates the usage of the wireless device."""
-        return DeviceUsage(await self.__read_int_16(0x7925, tag_index))
+        usage = await self.__read_int_16(0x7925, tag_index)
+        return DeviceUsage(usage) if usage is not None else None
 
-    async def tag_phase_sequence(self, tag_index: int) -> PhaseSequence:
+    async def tag_phase_sequence(self, tag_index: int) -> PhaseSequence | None:
         """Phase sequence."""
-        return PhaseSequence(await self.__read_int_16(0x7926, tag_index))
+        sequence = await self.__read_int_16(0x7926, tag_index)
+        return PhaseSequence(sequence) if sequence is not None else None
 
-    async def tag_position(self, tag_index: int) -> Position:
+    async def tag_position(self, tag_index: int) -> Position | None:
         """Mounting position"""
-        return Position(await self.__read_int_16(0x7927, tag_index))
+        position = await self.__read_int_16(0x7927, tag_index)
+        return Position(position) if position is not None else None
 
-    async def tag_circuit_diagnostic(self, tag_index: int) -> Position:
+    async def tag_circuit_diagnostic(self, tag_index: int) -> Position | None:
         """Circuit diagnostics"""
-        return Position(await self.__read_int_16(0x7928, tag_index))
+        position = await self.__read_int_16(0x7928, tag_index)
+        return Position(position) if position is not None else None
 
     async def tag_rated_current(self, tag_index: int) -> int | None:
         """Rated current of the protective device to the wireless device"""
@@ -617,6 +628,8 @@ class SchneiderModbus:
         self, tag_index: int
     ) -> ElectricalNetworkSystemType | None:
         code = await self.__read_int_16(0x792A, tag_index)
+        if code is None:
+            return None
         system_type = [e for e in ElectricalNetworkSystemType if e.value[0] == code]
         return system_type[0] if system_type else None
 
@@ -630,11 +643,12 @@ class SchneiderModbus:
         """Reset All Peak Demands"""
         await self.__write_int_16(0x792E, tag_index, 1)
 
-    async def tag_power_supply_type(self, tag_index: int) -> Position:
+    async def tag_power_supply_type(self, tag_index: int) -> Position | None:
         """Power supply type"""
         if self.type_of_gateway == TypeOfGateway.SMARTLINK:
             return Position.INVALID
-        return Position(await self.__read_int_16(0x792F, tag_index))
+        position = await self.__read_int_16(0x792F, tag_index)
+        return Position(position) if position is not None else None
 
     # Device identification
 
@@ -928,16 +942,15 @@ class SchneiderModbus:
                 timeout=5.0,
             )
             if result.isError():
-                _LOGGER.debug(
-                    f"Modbus error reading {address} from slave ID {slave_id}"
-                )
+                _LOGGER.debug(f"Modbus error reading {address} from slave ID {slave_id}")
                 return None
             return result.registers
 
         except asyncio.TimeoutError:
-            _LOGGER.debug(
-                f"Timeout when fetching address {address} from slave ID {slave_id}"
-            )
+            _LOGGER.debug(f"Timeout when fetching address {address} from slave ID {slave_id}")
+            return None
+        except ModbusIOException as e:
+            _LOGGER.error(f"Error when fetching {address} from slave ID {slave_id}: {e}")
             return None
 
     async def __async_write(
@@ -958,6 +971,7 @@ class SchneiderModbus:
             _LOGGER.debug(
                 f"Timeout when writing to address {address} to slave ID {slave_id}"
             )
+            return None
 
     async def __identify(self, _: int):
         # data = self.client.read_device_information(read_code=DeviceInformation.REGULAR, device_id=0xFF)
@@ -983,6 +997,8 @@ class SchneiderModbus:
 
     async def __read_float_32(self, address: int, slave_id: int) -> float | None:
         registers = await self.__async_read(address, 2, slave_id)
+        if registers is None:
+            return None
         result = self.client.convert_from_registers(
             registers, ModbusClientMixin.DATATYPE.FLOAT32
         )
@@ -994,6 +1010,8 @@ class SchneiderModbus:
 
     async def __read_int_16(self, address: int, slave_id: int) -> int | None:
         registers = await self.__async_read(address, 1, slave_id)
+        if registers is None:
+            return None
         result = self.client.convert_from_registers(
             registers, ModbusClientMixin.DATATYPE.UINT16
         )
@@ -1007,6 +1025,8 @@ class SchneiderModbus:
 
     async def __read_int_32(self, address: int, slave_id: int) -> int | None:
         registers = await self.__async_read(address, 2, slave_id)
+        if registers is None:
+            return None
         result = self.client.convert_from_registers(
             registers, ModbusClientMixin.DATATYPE.UINT32
         )
@@ -1014,6 +1034,8 @@ class SchneiderModbus:
 
     async def __read_int_64(self, address: int, slave_id: int) -> int | None:
         registers = await self.__async_read(address, 4, slave_id)
+        if registers is None:
+            return None
         result = self.client.convert_from_registers(
             registers, ModbusClientMixin.DATATYPE.UINT64
         )
@@ -1027,6 +1049,8 @@ class SchneiderModbus:
 
     async def __read_date_time(self, address: int, slave_id) -> datetime | None:
         registers = await self.__async_read(address, 4, slave_id)
+        if registers is None:
+            return None
 
         year_raw = self.client.convert_from_registers(
             registers[0:1], ModbusClientMixin.DATATYPE.UINT16

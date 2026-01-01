@@ -54,7 +54,9 @@ class PowerTagWirelessCommunicationValid(WirelessDeviceEntity, BinarySensorEntit
         super().__init__(client, modbus_index, tag_device, "wireless communication valid", unique_id_version, serial_number)
 
     async def async_update(self):
-        self._attr_is_on = await self._client.tag_wireless_communication_valid(self._modbus_index)
+        value = await self._client.tag_wireless_communication_valid(self._modbus_index)
+        if self._handle_availability(value):
+            self._attr_is_on = value
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -76,7 +78,9 @@ class PowerTagRadioCommunicationValid(WirelessDeviceEntity, BinarySensorEntity):
         super().__init__(client, modbus_index, tag_device, "radio communication valid", unique_id_version, serial_number)
 
     async def async_update(self):
-        self._attr_is_on = await self._client.tag_radio_communication_valid(self._modbus_index)
+        value = await self._client.tag_radio_communication_valid(self._modbus_index)
+        if self._handle_availability(value):
+            self._attr_is_on = value
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -98,20 +102,20 @@ class PowerTagAlarm(WirelessDeviceEntity, BinarySensorEntity):
 
     async def async_update(self):
         alarm = await self._client.tag_get_alarm(self._modbus_index)
-
-        if alarm.has_alarm != self._attr_is_on:
-            self._attr_is_on = alarm.has_alarm
-            self._attr_extra_state_attributes = {
-                "Voltage loss": alarm.voltage_loss,
-                "Current overload when voltage loss": alarm.current_overload_when_voltage_loss,
-                "Current short-circuit": alarm.current_short_circuit,
-                "Overload 45%": alarm.current_overload_45_percent,
-                "Load current loss": alarm.load_current_loss,
-                "Overvoltage 120%": alarm.overvoltage_120_percent,
-                "Undervoltage 80%": alarm.undervoltage_80_percent,
-                "Current 50%": alarm.current_50_percent,
-                "Current 80%": alarm.current_80_percent
-            }
+        if self._handle_availability(alarm):
+            if alarm.has_alarm != self._attr_is_on:
+                self._attr_is_on = alarm.has_alarm
+                self._attr_extra_state_attributes = {
+                    "Voltage loss": alarm.voltage_loss,
+                    "Current overload when voltage loss": alarm.current_overload_when_voltage_loss,
+                    "Current short-circuit": alarm.current_short_circuit,
+                    "Overload 45%": alarm.current_overload_45_percent,
+                    "Load current loss": alarm.load_current_loss,
+                    "Overvoltage 120%": alarm.overvoltage_120_percent,
+                    "Undervoltage 80%": alarm.undervoltage_80_percent,
+                    "Current 50%": alarm.current_50_percent,
+                    "Current 80%": alarm.current_80_percent
+                }
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -133,7 +137,8 @@ class AmbientTagAlarm(WirelessDeviceEntity, BinarySensorEntity):
 
     async def async_update(self):
         alarm = await self._client.tag_get_alarm(self._modbus_index)
-        self._attr_is_on = alarm.has_alarm
+        if self._handle_availability(alarm):
+            self._attr_is_on = alarm.has_alarm
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -154,17 +159,18 @@ class GatewayStatus(GatewayEntity, BinarySensorEntity):
 
     async def async_update(self):
         status = await self._client.status()
-        self._attr_is_on = status != LinkStatus.OPERATING
+        if self._handle_availability(status):
+            self._attr_is_on = status != LinkStatus.OPERATING
 
-        self._attr_extra_state_attributes["status"] = {
-            LinkStatus.OPERATING: "Operating",
-            LinkStatus.START_UP: "Starting up",
-            LinkStatus.DOWNGRADED: "Downgraded",
-            LinkStatus.E2PROM_ERROR: "E2PROM error",
-            LinkStatus.FLASH_ERROR: "Flash error",
-            LinkStatus.RAM_ERROR: "RAM error",
-            LinkStatus.GENERAL_FAILURE: "General failure"
-        }[status]
+            self._attr_extra_state_attributes["status"] = {
+                LinkStatus.OPERATING: "Operating",
+                LinkStatus.START_UP: "Starting up",
+                LinkStatus.DOWNGRADED: "Downgraded",
+                LinkStatus.E2PROM_ERROR: "E2PROM error",
+                LinkStatus.FLASH_ERROR: "Flash error",
+                LinkStatus.RAM_ERROR: "RAM error",
+                LinkStatus.GENERAL_FAILURE: "General failure"
+            }[status]
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
@@ -187,13 +193,14 @@ class GatewayHealth(GatewayEntity, BinarySensorEntity):
 
     async def async_update(self):
         status = await self._client.health()
-        self._attr_is_on = status != PanelHealth.NOMINAL
+        if self._handle_availability(status):
+            self._attr_is_on = status != PanelHealth.NOMINAL
 
-        self._attr_extra_state_attributes["status"] = {
-            PanelHealth.NOMINAL: "Nominal",
-            PanelHealth.DEGRADED: "Degraded",
-            PanelHealth.OUT_OF_ORDER: "Out of order"
-        }[status]
+            self._attr_extra_state_attributes["status"] = {
+                PanelHealth.NOMINAL: "Nominal",
+                PanelHealth.DEGRADED: "Degraded",
+                PanelHealth.OUT_OF_ORDER: "Out of order"
+            }[status]
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:

@@ -221,7 +221,7 @@ class PowerTagFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         if (((type_of_gateway in [TypeOfGateway.POWERTAG_LINK, TypeOfGateway.SMARTLINK]) and self.client.status() != LinkStatus.OPERATING)
                 or (type_of_gateway is TypeOfGateway.PANEL_SERVER and self.client.health() != PanelHealth.NOMINAL)):
             if not self.skip_degradation_warning:
-                self.status = await self.client.status() if type_of_gateway is TypeOfGateway.POWERTAG_LINK else self.client.health()
+                self.status = await self.client.status() if type_of_gateway is TypeOfGateway.POWERTAG_LINK else await self.client.health()
                 return await self.async_step_degraded()
 
         logging.info("Retrieving serial number...")

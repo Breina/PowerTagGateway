@@ -207,15 +207,10 @@ class SchneiderModbus:
     async def find_synthetic_table_slave_id(self):
         for slave_id in range(SYNTHESIS_TABLE_SLAVE_ID_START, 1, -1):
             _LOGGER.debug(f"Searching for synthesis table at slave ID {slave_id}")
-            try:
-                _ = await self.__read_int_16(0x0001, slave_id)
+            result = await self.__read_int_16(0x0001, slave_id)
+            if result is not None:
                 _LOGGER.debug(f"Found synthesis table at slave ID {slave_id}")
                 return slave_id
-            except ConnectionError:
-                _LOGGER.debug(
-                    f"Got error while finding synthesis table, proceeding with next slave ID"
-                )
-                continue
 
         _LOGGER.warning(
             f"Could not find synthesis table, proceeding with the default of {SYNTHESIS_TABLE_SLAVE_ID_START}, though expect problems later."
@@ -256,7 +251,7 @@ class SchneiderModbus:
             TypeOfGateway.POWERTAG_LINK,
             TypeOfGateway.SMARTLINK,
         ]
-        bitmap = self.__read_int_16(0x0070, GATEWAY_SLAVE_ID)
+        bitmap = await self.__read_int_16(0x0070, GATEWAY_SLAVE_ID)
         try:
             return LinkStatus(bitmap) if bitmap is not None else None
         except Exception as e:

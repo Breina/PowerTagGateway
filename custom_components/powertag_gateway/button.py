@@ -66,9 +66,9 @@ class PowerTagResetActiveEnergyDelivered(WirelessDeviceEntity, ButtonEntity):
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
-        return feature_class in [FeatureClass.A1, FeatureClass.F1 , FeatureClass.F3, FeatureClass.FL,
-                                 FeatureClass.M0, FeatureClass.M1, FeatureClass.M2, FeatureClass.M3,
-                                 FeatureClass.R1]
+        return feature_class in [FeatureClass.A1, FeatureClass.A2, FeatureClass.P1, FeatureClass.F1,
+                                 FeatureClass.F3, FeatureClass.FL, FeatureClass.M0, FeatureClass.M1,
+                                 FeatureClass.M2, FeatureClass.M3, FeatureClass.R1]
 
     @staticmethod
     def supports_gateway(type_of_gateway: TypeOfGateway) -> bool:
@@ -87,9 +87,9 @@ class PowerTagResetActiveEnergyReceived(WirelessDeviceEntity, ButtonEntity):
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
-        return feature_class in [FeatureClass.A1, FeatureClass.F1, FeatureClass.F3, FeatureClass.FL,
-                                 FeatureClass.M0, FeatureClass.M1, FeatureClass.M2, FeatureClass.M3,
-                                 FeatureClass.R1]
+        return feature_class in [FeatureClass.A1, FeatureClass.A2, FeatureClass.P1, FeatureClass.F1,
+                                 FeatureClass.F3, FeatureClass.FL, FeatureClass.M0, FeatureClass.M1,
+                                 FeatureClass.M2, FeatureClass.M3, FeatureClass.R1]
 
     @staticmethod
     def supports_gateway(type_of_gateway: TypeOfGateway) -> bool:

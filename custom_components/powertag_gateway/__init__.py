@@ -41,13 +41,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     type_of_gateway = [t for t in TypeOfGateway if t.value == type_of_gateway_string][0]
 
-    unique_id_version = UniqueIdVersion(entry.data.get(CONF_DEVICE_UNIQUE_ID_VERSION))
-    if unique_id_version is None:
+    unique_id_version_val = entry.data.get(CONF_DEVICE_UNIQUE_ID_VERSION)
+    if unique_id_version_val is None:
         _LOGGER.warning(
             "Using older version of device's unique ID, "
             "may cause conflicts with duplicate serials."
         )
         unique_id_version = UniqueIdVersion.V0
+    else:
+        unique_id_version = UniqueIdVersion(unique_id_version_val)
 
     try:
         client = await SchneiderModbus.create(host, type_of_gateway, port)

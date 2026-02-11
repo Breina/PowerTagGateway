@@ -603,7 +603,8 @@ class SchneiderModbus:
     async def tag_phase_sequence(self, tag_index: int) -> PhaseSequence | None:
         """Phase sequence."""
         sequence = await self.__read_int_16(0x7926, tag_index)
-        return PhaseSequence(sequence) if sequence is not None else None
+        _LOGGER.debug(f"Raw phase sequence register 0x7926 for slave {tag_index}: {sequence}")
+        return PhaseSequence(sequence) if sequence is not None else PhaseSequence.INVALID
 
     async def tag_position(self, tag_index: int) -> Position | None:
         """Mounting position"""

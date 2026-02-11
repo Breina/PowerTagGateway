@@ -74,7 +74,7 @@ async def async_discovery(hass: HomeAssistant) -> list[DiscoveredDevice]:
         if result.status_code != 200:
             continue
 
-        discovered_devices.append(DiscoveredDevice(result.text, type_of_gateway))
+        discovered_devices.append(await DiscoveredDevice.create(result.text, type_of_gateway))
 
     if discovered_devices:
         _LOGGER.info(f"Found {[s.friendly_name for s in discovered_devices]}")
@@ -130,7 +130,7 @@ class PowerTagFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 name = f"{device.friendly_name}: {device.model_name} ({device.host})"
                 if name == user_input[CONF_DEVICE]:
                     self.name = device.friendly_name
-                    self.serial_number = await device.serial_number
+                    self.serial_number = device.serial_number
                     self.host = device.host
                     self.port = device.port
                     self.type_of_gateway = device.type_of_gateway.value
@@ -218,10 +218,10 @@ class PowerTagFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         self.client = await SchneiderModbus.create(self.host, type_of_gateway, self.port)
 
         logging.info("Checking status...")
-        if (((type_of_gateway in [TypeOfGateway.POWERTAG_LINK, TypeOfGateway.SMARTLINK]) and self.client.status() != LinkStatus.OPERATING)
-                or (type_of_gateway is TypeOfGateway.PANEL_SERVER and self.client.health() != PanelHealth.NOMINAL)):
+        if (((type_of_gateway in [TypeOfGateway.POWERTAG_LINK, TypeOfGateway.SMARTLINK]) and await self.client.status() != LinkStatus.OPERATING)
+                or (type_of_gateway is TypeOfGateway.PANEL_SERVER and await self.client.health() != PanelHealth.NOMINAL)):
             if not self.skip_degradation_warning:
-                self.status = await self.client.status() if type_of_gateway is TypeOfGateway.POWERTAG_LINK else await self.client.health()
+                self.status = await self.client.health() if type_of_gateway is TypeOfGateway.PANEL_SERVER else await self.client.status()
                 return await self.async_step_degraded()
 
         logging.info("Retrieving serial number...")

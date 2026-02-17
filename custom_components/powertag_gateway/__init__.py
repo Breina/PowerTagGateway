@@ -43,10 +43,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     unique_id_version_val = entry.data.get(CONF_DEVICE_UNIQUE_ID_VERSION)
     if unique_id_version_val is None:
-        _LOGGER.warning(
-            "Using older version of device's unique ID, "
-            "may cause conflicts with duplicate serials."
-        )
         unique_id_version = UniqueIdVersion.V0
     else:
         unique_id_version = UniqueIdVersion(unique_id_version_val)

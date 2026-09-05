@@ -54,14 +54,14 @@ async def tag_device_info(
     client: SchneiderModbus,
     modbus_index: int,
     presentation_url: str,
-    gateway_identification: tuple[str, str],
+    gateway_device: dr.DeviceEntry,
 ) -> DeviceInfo:
     is_unreachable = await client.tag_radio_lqi_gateway(modbus_index) is None
     serial_number = await client.tag_serial_number(modbus_index)
 
     kwargs = {
         "configuration_url": presentation_url,
-        "via_device": gateway_identification,
+        "via_device_id": gateway_device.id,
         "identifiers": {(TAG_DOMAIN, serial_number)},
         "serial_number": serial_number,
         "hw_version": await client.tag_hardware_revision(modbus_index),
@@ -260,7 +260,7 @@ async def async_setup_entities(
     entities = []
     gateway_device = await gateway_device_info(client, presentation_url)
     device_registry = dr.async_get(hass)
-    device_registry.async_get_or_create(
+    gateway_device_entry = device_registry.async_get_or_create(
         config_entry_id=config_entry.entry_id,
         identifiers=gateway_device["identifiers"],
         manufacturer=gateway_device.get("manufacturer"),
@@ -329,7 +329,7 @@ async def async_setup_entities(
             client,
             modbus_address,
             presentation_url,
-            next(iter(gateway_device["identifiers"])),
+            gateway_device_entry,
         )
         device_name = tag_device["name"]
 

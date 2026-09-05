@@ -8,10 +8,15 @@ from pymodbus.client import ModbusTcpClient, AsyncModbusTcpClient  # type: ignor
 from pymodbus.constants import DeviceInformation  # type: ignore
 from pymodbus.pdu import ExceptionResponse  # type: ignore
 from pymodbus.client.mixin import ModbusClientMixin  # type: ignore
-from pymodbus.exceptions import ModbusIOException  # type: ignore
+from pymodbus.exceptions import ConnectionException, ModbusIOException  # type: ignore
 
 GATEWAY_SLAVE_ID = 255
 SYNTHESIS_TABLE_SLAVE_ID_START = 247
+
+# DOCA0241EN-06 documents the Panel Server identification registers as
+# "valid for firmware version 001.008.007 and later"; older firmware lays that
+# block out differently, so reads there can return nonsense (see issue #62).
+MINIMUM_PANEL_SERVER_FIRMWARE = (1, 8, 7)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -196,13 +201,40 @@ class SchneiderModbus:
         self.client = AsyncModbusTcpClient(host=host, port=port, timeout=timeout)
         self.type_of_gateway = type_of_gateway
         self.synthetic_slave_id = None
+        self.__connect_lock = asyncio.Lock()
 
     @classmethod
     async def create(cls, host, type_of_gateway: TypeOfGateway, port=502, timeout=5):
         instance = cls(host, type_of_gateway, port, timeout)
         if type_of_gateway is TypeOfGateway.POWERTAG_LINK:
             instance.synthetic_slave_id = await instance.find_synthetic_table_slave_id()
+        await instance.warn_if_firmware_outdated()
         return instance
+
+    async def warn_if_firmware_outdated(self) -> None:
+        """Tell the user when their gateway predates the register map we implement."""
+        if self.type_of_gateway is not TypeOfGateway.PANEL_SERVER:
+            return
+
+        firmware_version = await self.firmware_version()
+        parsed = self.parse_firmware_version(firmware_version)
+        minimum = ".".join(f"{part:03d}" for part in MINIMUM_PANEL_SERVER_FIRMWARE)
+
+        if parsed is None:
+            _LOGGER.warning(
+                f"Could not determine the firmware version of this Panel Server. This "
+                f"integration is built against firmware {minimum} and later; older "
+                f"firmware lays some registers out differently, so devices may be "
+                f"missing or reported incorrectly."
+            )
+        elif parsed < MINIMUM_PANEL_SERVER_FIRMWARE:
+            _LOGGER.warning(
+                f"This Panel Server runs firmware {firmware_version}, which is older "
+                f"than the {minimum} this integration is built against. Older firmware "
+                f"lays some registers out differently, so devices may be missing or "
+                f"reported incorrectly. Updating the Panel Server's firmware is "
+                f"recommended if you run into either."
+            )
 
     async def find_synthetic_table_slave_id(self):
         for slave_id in range(SYNTHESIS_TABLE_SLAVE_ID_START, 1, -1):
@@ -908,6 +940,17 @@ class SchneiderModbus:
     # Helper functions
 
     @staticmethod
+    def parse_firmware_version(firmware_version: str | None) -> tuple[int, ...] | None:
+        """Turn a "001.008.007" style version into a comparable tuple."""
+        if not firmware_version:
+            return None
+        parts = firmware_version.strip().strip("\x00").split(".")
+        try:
+            return tuple(int(part) for part in parts)
+        except ValueError:
+            return None
+
+    @staticmethod
     def round_to_significant_digits(number: float, significant_digits: int):
         if number == 0:
             return 0  # Early return to handle 0 explicitly
@@ -924,12 +967,25 @@ class SchneiderModbus:
     def __write(self, address: int, registers: list[int], slave_id: int):
         self.client.write_registers(address, registers, device_id=slave_id)
 
+    async def __ensure_connected(self) -> bool:
+        """Connect if needed. All three platforms set up concurrently against this
+        one client, so the connect is serialised to stop them racing each other."""
+        if self.client.connected:
+            return True
+        async with self.__connect_lock:
+            if self.client.connected:
+                return True
+            if not await self.client.connect():
+                _LOGGER.debug(f"Could not connect to {self.client}")
+                return False
+            return True
+
     async def __async_read(
         self, address: int, count: int, slave_id: int
     ) -> list[int] | None:
         try:
-            if not self.client.connected:
-                await self.client.connect()
+            if not await self.__ensure_connected():
+                return None
 
             result = await asyncio.wait_for(
                 self.client.read_holding_registers(
@@ -945,7 +1001,7 @@ class SchneiderModbus:
         except asyncio.TimeoutError:
             _LOGGER.debug(f"Timeout when fetching address {address} from slave ID {slave_id}")
             return None
-        except ModbusIOException as e:
+        except (ConnectionException, ModbusIOException) as e:
             _LOGGER.error(f"Error when fetching {address} from slave ID {slave_id}: {e}")
             return None
 
@@ -953,8 +1009,8 @@ class SchneiderModbus:
         self, address: int, registers: list[int], slave_id: int
     ) -> None:
         try:
-            if not self.client.connected:
-                await self.client.connect()
+            if not await self.__ensure_connected():
+                return None
 
             result = await asyncio.wait_for(
                 self.client.write_registers(address, registers, device_id=slave_id),
@@ -967,6 +1023,9 @@ class SchneiderModbus:
             _LOGGER.debug(
                 f"Timeout when writing to address {address} to slave ID {slave_id}"
             )
+            return None
+        except (ConnectionException, ModbusIOException) as e:
+            _LOGGER.error(f"Error when writing to {address} on slave ID {slave_id}: {e}")
             return None
 
     async def __identify(self, _: int):
@@ -983,7 +1042,21 @@ class SchneiderModbus:
 
     async def __read_string(self, address: int, count: int, slave_id: int) -> str | None:
         registers = await self.__async_read(address, count, slave_id)
-        return self.client.convert_from_registers(registers, ModbusClientMixin.DATATYPE.STRING)
+        if registers is None:
+            return None
+        try:
+            return self.client.convert_from_registers(
+                registers, ModbusClientMixin.DATATYPE.STRING
+            )
+        except UnicodeDecodeError as e:
+            # Some gateways hold non-ASCII in registers the register map says are
+            # ASCII (see issue #62). Degrade like every numeric read does, rather
+            # than taking down the entire platform setup.
+            _LOGGER.warning(
+                f"Could not decode string at address {address} from slave ID {slave_id} "
+                f"(registers: {[hex(r) for r in registers]}): {e}"
+            )
+            return None
 
     async def __write_string(self, address: int, slave_id: int, string: str):
         registers = self.client.convert_to_registers(

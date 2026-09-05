@@ -5,6 +5,7 @@ import logging
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_INTERNAL_URL
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.entity import Entity, DeviceInfo
 from homeassistant.helpers import device_registry as dr
 
@@ -32,6 +33,11 @@ async def gateway_device_info(
     client: SchneiderModbus, presentation_url: str
 ) -> DeviceInfo:
     serial = await client.serial_number()
+    if serial is None:
+        raise ConfigEntryNotReady(
+            "Could not read the gateway's serial number; will retry."
+        )
+
     name = await client.name()
     hw_version = await client.hardware_version()
     firmware_version = await client.firmware_version()
@@ -55,9 +61,15 @@ async def tag_device_info(
     modbus_index: int,
     presentation_url: str,
     gateway_device: dr.DeviceEntry,
-) -> DeviceInfo:
+) -> DeviceInfo | None:
     is_unreachable = await client.tag_radio_lqi_gateway(modbus_index) is None
     serial_number = await client.tag_serial_number(modbus_index)
+    if serial_number is None:
+        _LOGGER.warning(
+            f"Could not read the serial number of the device at address {modbus_index}; "
+            f"will ignore this one."
+        )
+        return None
 
     kwargs = {
         "configuration_url": presentation_url,
@@ -331,6 +343,9 @@ async def async_setup_entities(
             presentation_url,
             gateway_device_entry,
         )
+        if tag_device is None:
+            continue
+
         device_name = tag_device["name"]
 
         tag_phase_sequence = await client.tag_phase_sequence(modbus_address)

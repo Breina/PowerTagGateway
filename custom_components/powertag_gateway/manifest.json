@@ -6,7 +6,6 @@
   ],
   "config_flow": true,
   "documentation": "https://github.com/Breina/PowerTagGateway",
-  "homeassistant": "2026.9.0",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/Breina/PowerTagGateway/issues",
   "requirements": [

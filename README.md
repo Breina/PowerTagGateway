@@ -136,3 +136,15 @@ _The DPWS service configuration_
  2. Depending on where you added your PowerTags, press _ADD DEVICE_ or _ADD_SOLAR_PRODUCTION_.
  3. Select the PowerTag entity you want to add (ends with _'total energy'_)
  4. _SAVE_
+
+### Removing old devices
+
+When a wireless device is removed from the gateway or replaced by another one
+(e.g. a faulty PowerTag swapped for a new unit), its old device stays behind in Home Assistant.
+
+ 1. Remove it from the gateway first, then reload the integration.
+ 2. Open the old device (_Settings_ > _Devices & Services_ > _PowerTag Link Gateway_).
+ 3. _⋮_ > _Delete_
+
+Deleting is only allowed for devices that the gateway no longer reports: a device that is still
+present on the gateway would simply be re-created on the next reload.

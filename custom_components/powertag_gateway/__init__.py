@@ -8,11 +8,13 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform, CONF_HOST, CONF_PORT, CONF_INTERNAL_URL
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.helpers import device_registry as dr
 from pymodbus.exceptions import ConnectionException
 
 from .const import (
     CONF_CLIENT,
     CONF_SETUP_LOCK,
+    CONF_PRESENT_DEVICES,
     DOMAIN,
     CONF_TYPE_OF_GATEWAY,
     CONF_DEVICE_UNIQUE_ID_VERSION,
@@ -60,11 +62,32 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         CONF_DEVICE_UNIQUE_ID_VERSION: unique_id_version,
         # Platforms scan the gateway one after another, see async_setup_entities.
         CONF_SETUP_LOCK: asyncio.Lock(),
+        # Identifiers of the devices found on the gateway during the last scan,
+        # see async_remove_config_entry_device.
+        CONF_PRESENT_DEVICES: set(),
     }
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     return True
+
+
+async def async_remove_config_entry_device(
+    hass: HomeAssistant, entry: ConfigEntry, device_entry: dr.DeviceEntry
+) -> bool:
+    """Allow removing a device from the UI once it is no longer on the gateway.
+
+    Devices that were removed or replaced in the gateway (e.g. a faulty PowerTag
+    swapped for a new one) otherwise stay behind in the device registry forever.
+    A device that the gateway still reports is refused, as it would simply be
+    re-created on the next reload.
+    """
+    data = hass.data.get(DOMAIN, {}).get(entry.entry_id)
+    if data is None:
+        # Entry not loaded: we cannot tell what is on the gateway, be safe.
+        return False
+    present = data[CONF_PRESENT_DEVICES]
+    return not any(identifier in present for identifier in device_entry.identifiers)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

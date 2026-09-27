@@ -10,7 +10,13 @@ from homeassistant.helpers.entity import Entity, DeviceInfo
 from homeassistant.helpers import device_registry as dr
 
 from . import UniqueIdVersion
-from .const import CONF_CLIENT, DOMAIN, CONF_DEVICE_UNIQUE_ID_VERSION, CONF_SETUP_LOCK
+from .const import (
+    CONF_CLIENT,
+    DOMAIN,
+    CONF_DEVICE_UNIQUE_ID_VERSION,
+    CONF_SETUP_LOCK,
+    CONF_PRESENT_DEVICES,
+)
 from .const import GATEWAY_DOMAIN, TAG_DOMAIN
 from .device_features import (
     FeatureClass,
@@ -281,6 +287,7 @@ async def _async_setup_entities(
     client = data[CONF_CLIENT]
     presentation_url = data[CONF_INTERNAL_URL]
     device_unique_id_version = data[CONF_DEVICE_UNIQUE_ID_VERSION]
+    present_devices: set = data[CONF_PRESENT_DEVICES]
 
     entities = []
     gateway_device = await gateway_device_info(client, presentation_url)
@@ -296,6 +303,7 @@ async def _async_setup_entities(
         configuration_url=gateway_device.get("configuration_url"),
         serial_number=gateway_device.get("serial_number"),
     )
+    present_devices.update(gateway_device["identifiers"])
 
     _LOGGER.debug("Starting to scan for devices...")
     for i in range(1, 100):
@@ -366,6 +374,7 @@ async def _async_setup_entities(
         )
         if tag_device is None:
             continue
+        present_devices.update(tag_device["identifiers"])
 
         device_name = tag_device["name"]
 

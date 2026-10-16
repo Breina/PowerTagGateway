@@ -1,13 +1,15 @@
 import asyncio
 import inspect
 import logging
+from datetime import datetime, timedelta
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_INTERNAL_URL
+from homeassistant.const import CONF_INTERNAL_URL, CONF_SCAN_INTERVAL
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.entity import Entity, DeviceInfo
 from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers.event import async_track_time_interval
 
 from . import UniqueIdVersion
 from .const import (
@@ -16,6 +18,7 @@ from .const import (
     CONF_DEVICE_UNIQUE_ID_VERSION,
     CONF_SETUP_LOCK,
     CONF_PRESENT_DEVICES,
+    DEFAULT_SCAN_INTERVAL,
 )
 from .const import GATEWAY_DOMAIN, TAG_DOMAIN
 from .device_features import (
@@ -77,7 +80,7 @@ async def tag_device_info(
         )
         return None
 
-    kwargs = {
+    kwargs: DeviceInfo = {
         "configuration_url": presentation_url,
         "via_device_id": gateway_device.id,
         "identifiers": {(TAG_DOMAIN, serial_number)},
@@ -112,7 +115,7 @@ async def tag_device_info(
             f"S/N {kwargs['serial_number']}"
         )
 
-    return DeviceInfo(kwargs)  # type: ignore
+    return DeviceInfo(**kwargs)
 
 
 def phase_sequence_to_phases(phase_sequence: PhaseSequence) -> list[Phase]:
@@ -152,7 +155,50 @@ def phase_sequence_to_line_voltages(
         )
 
 
+def async_poll_entities(
+    hass: HomeAssistant, config_entry: ConfigEntry, entities: list[Entity]
+) -> None:
+    """Refresh the entities of one platform on the interval chosen in the options.
+
+    HA's own polling interval is fixed per platform, so the entities opt out of it and
+    get refreshed here instead, one at a time like PARALLEL_UPDATES = 1 did.
+    """
+    interval = timedelta(
+        seconds=config_entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+    )
+    lock = asyncio.Lock()
+
+    async def _async_refresh(_now: datetime) -> None:
+        if lock.locked():
+            _LOGGER.warning(
+                f"Reading all entities takes longer than the update interval of "
+                f"{interval.total_seconds():.0f}s; skipping this update. "
+                f"Consider raising it in the integration's options."
+            )
+            return
+
+        async with lock:
+            for entity in entities:
+                # Entities disabled in the registry never get added to HA.
+                if entity.hass is None:
+                    continue
+                await entity.async_update_ha_state(force_refresh=True)
+
+    config_entry.async_on_unload(
+        async_track_time_interval(
+            hass,
+            _async_refresh,
+            interval,
+            name=f"{DOMAIN} {config_entry.title} poll",
+            cancel_on_shutdown=True,
+        )
+    )
+
+
 class GatewayEntity(Entity):
+    # Refreshed by async_poll_entities instead.
+    _attr_should_poll = False
+
     def __init__(
         self, client: SchneiderModbus, tag_device: DeviceInfo, sensor_name: str, serial_number: str
     ):
@@ -172,6 +218,9 @@ class GatewayEntity(Entity):
 
 
 class WirelessDeviceEntity(Entity):
+    # Refreshed by async_poll_entities instead.
+    _attr_should_poll = False
+
     def __init__(
         self,
         client: SchneiderModbus,

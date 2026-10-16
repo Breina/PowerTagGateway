@@ -50,7 +50,7 @@ class PowerTagResetPeakDemand(WirelessDeviceEntity, ButtonEntity):
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
-        return feature_class in [FeatureClass.C]
+        return feature_class in [FeatureClass.A2, FeatureClass.P1, FeatureClass.C]
 
     @staticmethod
     def supports_gateway(type_of_gateway: TypeOfGateway) -> bool:

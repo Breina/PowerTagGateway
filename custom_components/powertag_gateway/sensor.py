@@ -18,6 +18,7 @@ from .device_features import FeatureClass
 from .entity_base import (
     GatewayEntity,
     WirelessDeviceEntity,
+    async_poll_entities,
     async_setup_entities,
     gateway_device_info,
 )
@@ -110,6 +111,7 @@ async def async_setup_entry(
     )
 
     async_add_entities(entities, update_before_add=False)
+    async_poll_entities(hass, config_entry, entities)
 
 
 class GatewayTime(GatewayEntity, SensorEntity):
@@ -1953,7 +1955,7 @@ class PowerTagDemandActivePower(WirelessDeviceEntity, SensorEntity):
 
     @staticmethod
     def supports_feature_set(feature_class: FeatureClass) -> bool:
-        return feature_class in [FeatureClass.C]
+        return feature_class in [FeatureClass.A2, FeatureClass.P1, FeatureClass.C]
 
     @staticmethod
     def supports_gateway(type_of_gateway: TypeOfGateway) -> bool:

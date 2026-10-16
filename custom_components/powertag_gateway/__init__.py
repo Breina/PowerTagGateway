@@ -68,6 +68,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     }
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    entry.async_on_unload(entry.add_update_listener(async_reload_entry))
 
     return True
 
@@ -88,6 +89,11 @@ async def async_remove_config_entry_device(
         return False
     present = data[CONF_PRESENT_DEVICES]
     return not any(identifier in present for identifier in device_entry.identifiers)
+
+
+async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Apply changed options, such as the update interval."""
+    await hass.config_entries.async_reload(entry.entry_id)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

@@ -10,8 +10,8 @@ import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.const import CONF_HOST, CONF_PORT, CONF_DEVICE, \
-    CONF_INTERNAL_URL
-from homeassistant.core import HomeAssistant
+    CONF_INTERNAL_URL, CONF_SCAN_INTERVAL
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import FlowResult
 from pymodbus.exceptions import ConnectionException
 
@@ -23,7 +23,8 @@ from .const import (
     DPWS_PRESENTATION_URL,
     DPWS_FRIENDLY_NAME,
     DPWS_SERIAL_NUMBER,
-    DOMAIN, CONF_TYPE_OF_GATEWAY, CONF_DEVICE_UNIQUE_ID_VERSION
+    DOMAIN, CONF_TYPE_OF_GATEWAY, CONF_DEVICE_UNIQUE_ID_VERSION,
+    DEFAULT_SCAN_INTERVAL, MIN_SCAN_INTERVAL
 )
 from .schneider_modbus import SchneiderModbus, TypeOfGateway, LinkStatus, \
     PanelHealth
@@ -263,3 +264,28 @@ class PowerTagFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     def construct_unique_id(model_name: str, serial_number: str) -> str:
         """Construct the unique id from the dpws discovery or user_step."""
         return f"{model_name}-{serial_number}"
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry: config_entries.ConfigEntry) -> PowerTagOptionsFlow:
+        return PowerTagOptionsFlow()
+
+
+class PowerTagOptionsFlow(config_entries.OptionsFlow):
+    """Settings that can be changed after the gateway was added."""
+
+    async def async_step_init(self, user_input=None) -> FlowResult:
+        if user_input is not None:
+            return self.async_create_entry(data=user_input)
+
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_SCAN_INTERVAL,
+                        default=self.config_entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
+                    ): vol.All(vol.Coerce(int), vol.Range(min=MIN_SCAN_INTERVAL)),
+                }
+            ),
+        )

@@ -19,3 +19,7 @@ DPWS_FRIENDLY_NAME = 'FriendlyName'
 DPWS_SERIAL_NUMBER = 'SerialNumber'
 CONF_SETUP_LOCK = 'setup_lock'
 CONF_PRESENT_DEVICES = 'present_devices'
+
+# Seconds between two polls of every entity on the gateway; see the options flow.
+DEFAULT_SCAN_INTERVAL = 30
+MIN_SCAN_INTERVAL = 5

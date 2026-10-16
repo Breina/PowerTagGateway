@@ -37,5 +37,15 @@
     "abort": {
       "user_cancelled": "User cancelled"
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "description": "How often every entity is read from the gateway. Lower values put more load on the gateway; when a full read takes longer than the interval, updates are skipped.",
+        "data": {
+          "scan_interval": "Update interval (seconds)"
+        }
+      }
+    }
   }
 }

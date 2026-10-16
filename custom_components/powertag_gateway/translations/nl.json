@@ -37,5 +37,15 @@
     "abort": {
       "user_cancelled": "Geannuleerd"
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "description": "Hoe vaak elke entiteit van de gateway wordt uitgelezen. Lagere waardes belasten de gateway meer; als één volledige uitlezing langer duurt dan het interval, worden updates overgeslagen.",
+        "data": {
+          "scan_interval": "Update interval (seconden)"
+        }
+      }
+    }
   }
 }

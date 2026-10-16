@@ -9,7 +9,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import CONF_CLIENT, DOMAIN, UniqueIdVersion
 from .device_features import FeatureClass
-from .entity_base import WirelessDeviceEntity, GatewayEntity, async_setup_entities, gateway_device_info
+from .entity_base import WirelessDeviceEntity, GatewayEntity, async_poll_entities, async_setup_entities, gateway_device_info
 from .schneider_modbus import SchneiderModbus, LinkStatus, PanelHealth, TypeOfGateway
 
 _LOGGER = logging.getLogger(__name__)
@@ -47,6 +47,7 @@ async def async_setup_entry(
                      ])
 
     async_add_entities(entities, update_before_add=False)
+    async_poll_entities(hass, config_entry, entities)
 
 
 class PowerTagWirelessCommunicationValid(WirelessDeviceEntity, BinarySensorEntity):
